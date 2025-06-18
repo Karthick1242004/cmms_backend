@@ -2,11 +2,18 @@
   "name": "cmms-server",
   "version": "1.0.0",
   "description": "Backend server for CMMS Dashboard",
-  "main": "index.js",
+  "main": "dist/index.js",
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
   "scripts": {
     "dev": "nodemon src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
+    "postbuild": "echo 'Build completed successfully'",
+    "railway:build": "npm run build",
+    "railway:start": "npm run start",
     "test": "jest",
     "seed:departments": "ts-node src/scripts/seedDepartments.ts",
     "seed": "npm run seed:departments",
