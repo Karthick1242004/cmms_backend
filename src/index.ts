@@ -7,6 +7,7 @@ import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
 import Database from './config/database';
 import departmentRoutes from './routes/departmentRoutes';
+import shiftDetailRoutes from './routes/shiftDetailRoutes';
 
 // Load environment variables
 dotenv.config();
@@ -33,6 +34,7 @@ app.use(helmet({
 // CORS configuration
 const allowedOrigins: string[] = [
   'http://localhost:3000',
+  'http://localhost:3001',
   'https://cmms-dashboard.vercel.app',
   ...(process.env.FRONTEND_URL ? [process.env.FRONTEND_URL] : [])
 ];
@@ -136,6 +138,7 @@ app.get('/api/database/info', async (req: Request, res: Response): Promise<void>
 
 // API routes
 app.use('/api/departments', departmentRoutes);
+app.use('/api/shift-details', shiftDetailRoutes);
 
 // Root endpoint
 app.get('/', (req: Request, res: Response): void => {
@@ -148,6 +151,7 @@ app.get('/', (req: Request, res: Response): void => {
     health: '/health',
     endpoints: {
       departments: '/api/departments',
+      shift_details: '/api/shift-details',
       database_info: '/api/database/info'
     }
   });
@@ -167,7 +171,13 @@ app.use('*', (req: Request, res: Response): void => {
       'GET /api/departments/:id',
       'PUT /api/departments/:id',
       'DELETE /api/departments/:id',
-      'GET /api/departments/stats'
+      'GET /api/departments/stats',
+      'GET /api/shift-details',
+      'POST /api/shift-details',
+      'GET /api/shift-details/:id',
+      'PUT /api/shift-details/:id',
+      'DELETE /api/shift-details/:id',
+      'GET /api/shift-details/stats'
     ]
   });
 });
@@ -287,6 +297,12 @@ async function startServer() {
       console.log(`   PUT  /api/departments/:id - Update department`);
       console.log(`   DEL  /api/departments/:id - Delete department`);
       console.log(`   GET  /api/departments/stats - Department statistics`);
+      console.log(`   GET  /api/shift-details - List shift details`);
+      console.log(`   POST /api/shift-details - Create shift detail`);
+      console.log(`   GET  /api/shift-details/:id - Get shift detail`);
+      console.log(`   PUT  /api/shift-details/:id - Update shift detail`);
+      console.log(`   DEL  /api/shift-details/:id - Delete shift detail`);
+      console.log(`   GET  /api/shift-details/stats - Shift detail statistics`);
     });
   } catch (error) {
     console.error('❌ Failed to start server:', error);

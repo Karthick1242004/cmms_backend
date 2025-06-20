@@ -16,7 +16,8 @@
     "railway:start": "npm run start",
     "test": "jest",
     "seed:departments": "ts-node src/scripts/seedDepartments.ts",
-    "seed": "npm run seed:departments",
+    "seed:shift-details": "ts-node src/scripts/seedShiftDetails.ts",
+    "seed": "npm run seed:departments && npm run seed:shift-details",
     "db:setup": "npm run seed",
     "clean": "rm -rf dist"
   },
