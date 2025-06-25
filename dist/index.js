@@ -12,6 +12,8 @@ const express_rate_limit_1 = __importDefault(require("express-rate-limit"));
 const dotenv_1 = __importDefault(require("dotenv"));
 const database_1 = __importDefault(require("./config/database"));
 const departmentRoutes_1 = __importDefault(require("./routes/departmentRoutes"));
+const shiftDetailRoutes_1 = __importDefault(require("./routes/shiftDetailRoutes"));
+const maintenanceRoutes_1 = __importDefault(require("./routes/maintenanceRoutes"));
 // Load environment variables
 dotenv_1.default.config();
 const app = (0, express_1.default)();
@@ -31,8 +33,14 @@ app.use((0, helmet_1.default)({
     crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
 // CORS configuration
+const allowedOrigins = [
+    'http://localhost:3000',
+    'http://localhost:3001',
+    'https://cmms-dashboard.vercel.app',
+    ...(process.env.FRONTEND_URL ? [process.env.FRONTEND_URL] : [])
+];
 app.use((0, cors_1.default)({
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    origin: allowedOrigins,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
@@ -121,6 +129,8 @@ app.get('/api/database/info', async (req, res) => {
 });
 // API routes
 app.use('/api/departments', departmentRoutes_1.default);
+app.use('/api/shift-details', shiftDetailRoutes_1.default);
+app.use('/api/maintenance', maintenanceRoutes_1.default);
 // Root endpoint
 app.get('/', (req, res) => {
     res.status(200).json({
@@ -132,6 +142,8 @@ app.get('/', (req, res) => {
         health: '/health',
         endpoints: {
             departments: '/api/departments',
+            shift_details: '/api/shift-details',
+            maintenance: '/api/maintenance',
             database_info: '/api/database/info'
         }
     });
@@ -150,7 +162,25 @@ app.use('*', (req, res) => {
             'GET /api/departments/:id',
             'PUT /api/departments/:id',
             'DELETE /api/departments/:id',
-            'GET /api/departments/stats'
+            'GET /api/departments/stats',
+            'GET /api/shift-details',
+            'POST /api/shift-details',
+            'GET /api/shift-details/:id',
+            'PUT /api/shift-details/:id',
+            'DELETE /api/shift-details/:id',
+            'GET /api/shift-details/stats',
+            'GET /api/maintenance/schedules',
+            'POST /api/maintenance/schedules',
+            'GET /api/maintenance/schedules/:id',
+            'PUT /api/maintenance/schedules/:id',
+            'DELETE /api/maintenance/schedules/:id',
+            'GET /api/maintenance/records',
+            'POST /api/maintenance/records',
+            'GET /api/maintenance/records/:id',
+            'PUT /api/maintenance/records/:id',
+            'PATCH /api/maintenance/records/:id/verify',
+            'DELETE /api/maintenance/records/:id',
+            'GET /api/maintenance/stats'
         ]
     });
 });
@@ -257,6 +287,24 @@ async function startServer() {
             console.log(`   PUT  /api/departments/:id - Update department`);
             console.log(`   DEL  /api/departments/:id - Delete department`);
             console.log(`   GET  /api/departments/stats - Department statistics`);
+            console.log(`   GET  /api/shift-details - List shift details`);
+            console.log(`   POST /api/shift-details - Create shift detail`);
+            console.log(`   GET  /api/shift-details/:id - Get shift detail`);
+            console.log(`   PUT  /api/shift-details/:id - Update shift detail`);
+            console.log(`   DEL  /api/shift-details/:id - Delete shift detail`);
+            console.log(`   GET  /api/shift-details/stats - Shift detail statistics`);
+            console.log(`   GET  /api/maintenance/schedules - List maintenance schedules`);
+            console.log(`   POST /api/maintenance/schedules - Create maintenance schedule`);
+            console.log(`   GET  /api/maintenance/schedules/:id - Get maintenance schedule`);
+            console.log(`   PUT  /api/maintenance/schedules/:id - Update maintenance schedule`);
+            console.log(`   DEL  /api/maintenance/schedules/:id - Delete maintenance schedule`);
+            console.log(`   GET  /api/maintenance/records - List maintenance records`);
+            console.log(`   POST /api/maintenance/records - Create maintenance record`);
+            console.log(`   GET  /api/maintenance/records/:id - Get maintenance record`);
+            console.log(`   PUT  /api/maintenance/records/:id - Update maintenance record`);
+            console.log(`   PATCH /api/maintenance/records/:id/verify - Verify maintenance record`);
+            console.log(`   DEL  /api/maintenance/records/:id - Delete maintenance record`);
+            console.log(`   GET  /api/maintenance/stats - Maintenance statistics`);
         });
     }
     catch (error) {

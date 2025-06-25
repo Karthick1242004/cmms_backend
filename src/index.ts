@@ -8,6 +8,7 @@ import dotenv from 'dotenv';
 import Database from './config/database';
 import departmentRoutes from './routes/departmentRoutes';
 import shiftDetailRoutes from './routes/shiftDetailRoutes';
+import maintenanceRoutes from './routes/maintenanceRoutes';
 
 // Load environment variables
 dotenv.config();
@@ -139,6 +140,7 @@ app.get('/api/database/info', async (req: Request, res: Response): Promise<void>
 // API routes
 app.use('/api/departments', departmentRoutes);
 app.use('/api/shift-details', shiftDetailRoutes);
+app.use('/api/maintenance', maintenanceRoutes);
 
 // Root endpoint
 app.get('/', (req: Request, res: Response): void => {
@@ -152,6 +154,7 @@ app.get('/', (req: Request, res: Response): void => {
     endpoints: {
       departments: '/api/departments',
       shift_details: '/api/shift-details',
+      maintenance: '/api/maintenance',
       database_info: '/api/database/info'
     }
   });
@@ -177,7 +180,19 @@ app.use('*', (req: Request, res: Response): void => {
       'GET /api/shift-details/:id',
       'PUT /api/shift-details/:id',
       'DELETE /api/shift-details/:id',
-      'GET /api/shift-details/stats'
+      'GET /api/shift-details/stats',
+      'GET /api/maintenance/schedules',
+      'POST /api/maintenance/schedules',
+      'GET /api/maintenance/schedules/:id',
+      'PUT /api/maintenance/schedules/:id',
+      'DELETE /api/maintenance/schedules/:id',
+      'GET /api/maintenance/records',
+      'POST /api/maintenance/records',
+      'GET /api/maintenance/records/:id',
+      'PUT /api/maintenance/records/:id',
+      'PATCH /api/maintenance/records/:id/verify',
+      'DELETE /api/maintenance/records/:id',
+      'GET /api/maintenance/stats'
     ]
   });
 });
@@ -303,6 +318,18 @@ async function startServer() {
       console.log(`   PUT  /api/shift-details/:id - Update shift detail`);
       console.log(`   DEL  /api/shift-details/:id - Delete shift detail`);
       console.log(`   GET  /api/shift-details/stats - Shift detail statistics`);
+      console.log(`   GET  /api/maintenance/schedules - List maintenance schedules`);
+      console.log(`   POST /api/maintenance/schedules - Create maintenance schedule`);
+      console.log(`   GET  /api/maintenance/schedules/:id - Get maintenance schedule`);
+      console.log(`   PUT  /api/maintenance/schedules/:id - Update maintenance schedule`);
+      console.log(`   DEL  /api/maintenance/schedules/:id - Delete maintenance schedule`);
+      console.log(`   GET  /api/maintenance/records - List maintenance records`);
+      console.log(`   POST /api/maintenance/records - Create maintenance record`);
+      console.log(`   GET  /api/maintenance/records/:id - Get maintenance record`);
+      console.log(`   PUT  /api/maintenance/records/:id - Update maintenance record`);
+      console.log(`   PATCH /api/maintenance/records/:id/verify - Verify maintenance record`);
+      console.log(`   DEL  /api/maintenance/records/:id - Delete maintenance record`);
+      console.log(`   GET  /api/maintenance/stats - Maintenance statistics`);
     });
   } catch (error) {
     console.error('❌ Failed to start server:', error);
