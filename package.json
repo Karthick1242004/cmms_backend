@@ -18,6 +18,7 @@
     "seed:departments": "ts-node src/scripts/seedDepartments.ts",
     "seed:shift-details": "ts-node src/scripts/seedShiftDetails.ts",
     "seed:maintenance": "ts-node src/scripts/seedMaintenance.ts",
+    "seed:safety-inspection": "ts-node src/scripts/seedSafetyInspection.ts",
     "seed": "npm run seed:departments && npm run seed:shift-details && npm run seed:maintenance",
     "db:setup": "npm run seed",
     "clean": "rm -rf dist"

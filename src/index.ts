@@ -9,6 +9,7 @@ import Database from './config/database';
 import departmentRoutes from './routes/departmentRoutes';
 import shiftDetailRoutes from './routes/shiftDetailRoutes';
 import maintenanceRoutes from './routes/maintenanceRoutes';
+import safetyInspectionRoutes from './routes/safetyInspectionRoutes';
 
 // Load environment variables
 dotenv.config();
@@ -141,6 +142,7 @@ app.get('/api/database/info', async (req: Request, res: Response): Promise<void>
 app.use('/api/departments', departmentRoutes);
 app.use('/api/shift-details', shiftDetailRoutes);
 app.use('/api/maintenance', maintenanceRoutes);
+app.use('/api/safety-inspection', safetyInspectionRoutes);
 
 // Root endpoint
 app.get('/', (req: Request, res: Response): void => {
@@ -155,6 +157,7 @@ app.get('/', (req: Request, res: Response): void => {
       departments: '/api/departments',
       shift_details: '/api/shift-details',
       maintenance: '/api/maintenance',
+      safety_inspection: '/api/safety-inspection',
       database_info: '/api/database/info'
     }
   });
@@ -192,7 +195,18 @@ app.use('*', (req: Request, res: Response): void => {
       'PUT /api/maintenance/records/:id',
       'PATCH /api/maintenance/records/:id/verify',
       'DELETE /api/maintenance/records/:id',
-      'GET /api/maintenance/stats'
+      'GET /api/maintenance/stats',
+      'GET /api/safety-inspection/schedules',
+      'POST /api/safety-inspection/schedules',
+      'GET /api/safety-inspection/schedules/:id',
+      'PUT /api/safety-inspection/schedules/:id',
+      'DELETE /api/safety-inspection/schedules/:id',
+      'GET /api/safety-inspection/records',
+      'POST /api/safety-inspection/records',
+      'GET /api/safety-inspection/records/:id',
+      'PUT /api/safety-inspection/records/:id',
+      'PATCH /api/safety-inspection/records/:id/verify',
+      'GET /api/safety-inspection/stats'
     ]
   });
 });
@@ -330,6 +344,17 @@ async function startServer() {
       console.log(`   PATCH /api/maintenance/records/:id/verify - Verify maintenance record`);
       console.log(`   DEL  /api/maintenance/records/:id - Delete maintenance record`);
       console.log(`   GET  /api/maintenance/stats - Maintenance statistics`);
+      console.log(`   GET  /api/safety-inspection/schedules - List safety inspection schedules`);
+      console.log(`   POST /api/safety-inspection/schedules - Create safety inspection schedule`);
+      console.log(`   GET  /api/safety-inspection/schedules/:id - Get safety inspection schedule`);
+      console.log(`   PUT  /api/safety-inspection/schedules/:id - Update safety inspection schedule`);
+      console.log(`   DEL  /api/safety-inspection/schedules/:id - Delete safety inspection schedule`);
+      console.log(`   GET  /api/safety-inspection/records - List safety inspection records`);
+      console.log(`   POST /api/safety-inspection/records - Create safety inspection record`);
+      console.log(`   GET  /api/safety-inspection/records/:id - Get safety inspection record`);
+      console.log(`   PUT  /api/safety-inspection/records/:id - Update safety inspection record`);
+      console.log(`   PATCH /api/safety-inspection/records/:id/verify - Verify safety inspection record`);
+      console.log(`   GET  /api/safety-inspection/stats - Safety inspection statistics`);
     });
   } catch (error) {
     console.error('❌ Failed to start server:', error);
