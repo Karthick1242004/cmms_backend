@@ -14,6 +14,8 @@ const database_1 = __importDefault(require("./config/database"));
 const departmentRoutes_1 = __importDefault(require("./routes/departmentRoutes"));
 const shiftDetailRoutes_1 = __importDefault(require("./routes/shiftDetailRoutes"));
 const maintenanceRoutes_1 = __importDefault(require("./routes/maintenanceRoutes"));
+const safetyInspectionRoutes_1 = __importDefault(require("./routes/safetyInspectionRoutes"));
+const employeeRoutes_1 = __importDefault(require("./routes/employeeRoutes"));
 // Load environment variables
 dotenv_1.default.config();
 const app = (0, express_1.default)();
@@ -131,6 +133,8 @@ app.get('/api/database/info', async (req, res) => {
 app.use('/api/departments', departmentRoutes_1.default);
 app.use('/api/shift-details', shiftDetailRoutes_1.default);
 app.use('/api/maintenance', maintenanceRoutes_1.default);
+app.use('/api/safety-inspection', safetyInspectionRoutes_1.default);
+app.use('/api/employees', employeeRoutes_1.default);
 // Root endpoint
 app.get('/', (req, res) => {
     res.status(200).json({
@@ -144,6 +148,8 @@ app.get('/', (req, res) => {
             departments: '/api/departments',
             shift_details: '/api/shift-details',
             maintenance: '/api/maintenance',
+            safety_inspection: '/api/safety-inspection',
+            employees: '/api/employees',
             database_info: '/api/database/info'
         }
     });
@@ -180,7 +186,24 @@ app.use('*', (req, res) => {
             'PUT /api/maintenance/records/:id',
             'PATCH /api/maintenance/records/:id/verify',
             'DELETE /api/maintenance/records/:id',
-            'GET /api/maintenance/stats'
+            'GET /api/maintenance/stats',
+            'GET /api/safety-inspection/schedules',
+            'POST /api/safety-inspection/schedules',
+            'GET /api/safety-inspection/schedules/:id',
+            'PUT /api/safety-inspection/schedules/:id',
+            'DELETE /api/safety-inspection/schedules/:id',
+            'GET /api/safety-inspection/records',
+            'POST /api/safety-inspection/records',
+            'GET /api/safety-inspection/records/:id',
+            'PUT /api/safety-inspection/records/:id',
+            'PATCH /api/safety-inspection/records/:id/verify',
+            'GET /api/safety-inspection/stats',
+            'GET /api/employees',
+            'POST /api/employees',
+            'GET /api/employees/:id',
+            'PUT /api/employees/:id',
+            'DELETE /api/employees/:id',
+            'GET /api/employees/stats'
         ]
     });
 });
@@ -305,6 +328,23 @@ async function startServer() {
             console.log(`   PATCH /api/maintenance/records/:id/verify - Verify maintenance record`);
             console.log(`   DEL  /api/maintenance/records/:id - Delete maintenance record`);
             console.log(`   GET  /api/maintenance/stats - Maintenance statistics`);
+            console.log(`   GET  /api/safety-inspection/schedules - List safety inspection schedules`);
+            console.log(`   POST /api/safety-inspection/schedules - Create safety inspection schedule`);
+            console.log(`   GET  /api/safety-inspection/schedules/:id - Get safety inspection schedule`);
+            console.log(`   PUT  /api/safety-inspection/schedules/:id - Update safety inspection schedule`);
+            console.log(`   DEL  /api/safety-inspection/schedules/:id - Delete safety inspection schedule`);
+            console.log(`   GET  /api/safety-inspection/records - List safety inspection records`);
+            console.log(`   POST /api/safety-inspection/records - Create safety inspection record`);
+            console.log(`   GET  /api/safety-inspection/records/:id - Get safety inspection record`);
+            console.log(`   PUT  /api/safety-inspection/records/:id - Update safety inspection record`);
+            console.log(`   PATCH /api/safety-inspection/records/:id/verify - Verify safety inspection record`);
+            console.log(`   GET  /api/safety-inspection/stats - Safety inspection statistics`);
+            console.log(`   GET  /api/employees - List employees`);
+            console.log(`   POST /api/employees - Create employee`);
+            console.log(`   GET  /api/employees/:id - Get employee`);
+            console.log(`   PUT  /api/employees/:id - Update employee`);
+            console.log(`   DEL  /api/employees/:id - Delete employee`);
+            console.log(`   GET  /api/employees/stats - Employee statistics`);
         });
     }
     catch (error) {

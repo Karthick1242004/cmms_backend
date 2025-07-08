@@ -10,6 +10,7 @@ import departmentRoutes from './routes/departmentRoutes';
 import shiftDetailRoutes from './routes/shiftDetailRoutes';
 import maintenanceRoutes from './routes/maintenanceRoutes';
 import safetyInspectionRoutes from './routes/safetyInspectionRoutes';
+import employeeRoutes from './routes/employeeRoutes';
 
 // Load environment variables
 dotenv.config();
@@ -143,6 +144,7 @@ app.use('/api/departments', departmentRoutes);
 app.use('/api/shift-details', shiftDetailRoutes);
 app.use('/api/maintenance', maintenanceRoutes);
 app.use('/api/safety-inspection', safetyInspectionRoutes);
+app.use('/api/employees', employeeRoutes);
 
 // Root endpoint
 app.get('/', (req: Request, res: Response): void => {
@@ -158,6 +160,7 @@ app.get('/', (req: Request, res: Response): void => {
       shift_details: '/api/shift-details',
       maintenance: '/api/maintenance',
       safety_inspection: '/api/safety-inspection',
+      employees: '/api/employees',
       database_info: '/api/database/info'
     }
   });
@@ -206,7 +209,13 @@ app.use('*', (req: Request, res: Response): void => {
       'GET /api/safety-inspection/records/:id',
       'PUT /api/safety-inspection/records/:id',
       'PATCH /api/safety-inspection/records/:id/verify',
-      'GET /api/safety-inspection/stats'
+      'GET /api/safety-inspection/stats',
+      'GET /api/employees',
+      'POST /api/employees',
+      'GET /api/employees/:id',
+      'PUT /api/employees/:id',
+      'DELETE /api/employees/:id',
+      'GET /api/employees/stats'
     ]
   });
 });
@@ -355,6 +364,12 @@ async function startServer() {
       console.log(`   PUT  /api/safety-inspection/records/:id - Update safety inspection record`);
       console.log(`   PATCH /api/safety-inspection/records/:id/verify - Verify safety inspection record`);
       console.log(`   GET  /api/safety-inspection/stats - Safety inspection statistics`);
+      console.log(`   GET  /api/employees - List employees`);
+      console.log(`   POST /api/employees - Create employee`);
+      console.log(`   GET  /api/employees/:id - Get employee`);
+      console.log(`   PUT  /api/employees/:id - Update employee`);
+      console.log(`   DEL  /api/employees/:id - Delete employee`);
+      console.log(`   GET  /api/employees/stats - Employee statistics`);
     });
   } catch (error) {
     console.error('❌ Failed to start server:', error);
