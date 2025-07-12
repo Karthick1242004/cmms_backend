@@ -11,6 +11,7 @@ import shiftDetailRoutes from './routes/shiftDetailRoutes';
 import maintenanceRoutes from './routes/maintenanceRoutes';
 import safetyInspectionRoutes from './routes/safetyInspectionRoutes';
 import employeeRoutes from './routes/employeeRoutes';
+import assetRoutes from './routes/assetRoutes';
 
 // Load environment variables
 dotenv.config();
@@ -145,6 +146,7 @@ app.use('/api/shift-details', shiftDetailRoutes);
 app.use('/api/maintenance', maintenanceRoutes);
 app.use('/api/safety-inspection', safetyInspectionRoutes);
 app.use('/api/employees', employeeRoutes);
+app.use('/api/assets', assetRoutes);
 
 // Root endpoint
 app.get('/', (req: Request, res: Response): void => {
@@ -161,6 +163,7 @@ app.get('/', (req: Request, res: Response): void => {
       maintenance: '/api/maintenance',
       safety_inspection: '/api/safety-inspection',
       employees: '/api/employees',
+      assets: '/api/assets',
       database_info: '/api/database/info'
     }
   });
@@ -215,7 +218,14 @@ app.use('*', (req: Request, res: Response): void => {
       'GET /api/employees/:id',
       'PUT /api/employees/:id',
       'DELETE /api/employees/:id',
-      'GET /api/employees/stats'
+      'GET /api/employees/stats',
+      'GET /api/assets',
+      'POST /api/assets',
+      'GET /api/assets/:id',
+      'PUT /api/assets/:id',
+      'DELETE /api/assets/:id',
+      'GET /api/assets/stats',
+      'POST /api/assets/bulk-import'
     ]
   });
 });
@@ -370,6 +380,13 @@ async function startServer() {
       console.log(`   PUT  /api/employees/:id - Update employee`);
       console.log(`   DEL  /api/employees/:id - Delete employee`);
       console.log(`   GET  /api/employees/stats - Employee statistics`);
+      console.log(`   GET  /api/assets - List assets`);
+      console.log(`   POST /api/assets - Create asset`);
+      console.log(`   GET  /api/assets/:id - Get asset`);
+      console.log(`   PUT  /api/assets/:id - Update asset`);
+      console.log(`   DEL  /api/assets/:id - Delete asset`);
+      console.log(`   GET  /api/assets/stats - Asset statistics`);
+      console.log(`   POST /api/assets/bulk-import - Bulk import assets`);
     });
   } catch (error) {
     console.error('❌ Failed to start server:', error);
