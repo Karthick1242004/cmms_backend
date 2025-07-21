@@ -20,7 +20,6 @@ export class AssetController {
         sortOrder = 'asc' 
       } = req.query;
 
-      // Build query
       const query: any = {};
       
       // Exclude deleted assets by default
