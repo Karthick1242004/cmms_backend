@@ -47,8 +47,6 @@ exports.validateCreateEmployee = [
         .withMessage('Status must be either active or inactive'),
     (0, express_validator_1.body)('avatar')
         .optional()
-        .isURL()
-        .withMessage('Avatar must be a valid URL')
         .isLength({ max: 500 })
         .withMessage('Avatar URL cannot exceed 500 characters')
 ];
@@ -95,8 +93,6 @@ exports.validateUpdateEmployee = [
         .withMessage('Status must be either active or inactive'),
     (0, express_validator_1.body)('avatar')
         .optional()
-        .isURL()
-        .withMessage('Avatar must be a valid URL')
         .isLength({ max: 500 })
         .withMessage('Avatar URL cannot exceed 500 characters')
 ];

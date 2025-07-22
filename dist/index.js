@@ -16,6 +16,7 @@ const shiftDetailRoutes_1 = __importDefault(require("./routes/shiftDetailRoutes"
 const maintenanceRoutes_1 = __importDefault(require("./routes/maintenanceRoutes"));
 const safetyInspectionRoutes_1 = __importDefault(require("./routes/safetyInspectionRoutes"));
 const employeeRoutes_1 = __importDefault(require("./routes/employeeRoutes"));
+const assetRoutes_1 = __importDefault(require("./routes/assetRoutes"));
 // Load environment variables
 dotenv_1.default.config();
 const app = (0, express_1.default)();
@@ -135,6 +136,7 @@ app.use('/api/shift-details', shiftDetailRoutes_1.default);
 app.use('/api/maintenance', maintenanceRoutes_1.default);
 app.use('/api/safety-inspection', safetyInspectionRoutes_1.default);
 app.use('/api/employees', employeeRoutes_1.default);
+app.use('/api/assets', assetRoutes_1.default);
 // Root endpoint
 app.get('/', (req, res) => {
     res.status(200).json({
@@ -150,6 +152,7 @@ app.get('/', (req, res) => {
             maintenance: '/api/maintenance',
             safety_inspection: '/api/safety-inspection',
             employees: '/api/employees',
+            assets: '/api/assets',
             database_info: '/api/database/info'
         }
     });
@@ -203,7 +206,14 @@ app.use('*', (req, res) => {
             'GET /api/employees/:id',
             'PUT /api/employees/:id',
             'DELETE /api/employees/:id',
-            'GET /api/employees/stats'
+            'GET /api/employees/stats',
+            'GET /api/assets',
+            'POST /api/assets',
+            'GET /api/assets/:id',
+            'PUT /api/assets/:id',
+            'DELETE /api/assets/:id',
+            'GET /api/assets/stats',
+            'POST /api/assets/bulk-import'
         ]
     });
 });
@@ -345,6 +355,13 @@ async function startServer() {
             console.log(`   PUT  /api/employees/:id - Update employee`);
             console.log(`   DEL  /api/employees/:id - Delete employee`);
             console.log(`   GET  /api/employees/stats - Employee statistics`);
+            console.log(`   GET  /api/assets - List assets`);
+            console.log(`   POST /api/assets - Create asset`);
+            console.log(`   GET  /api/assets/:id - Get asset`);
+            console.log(`   PUT  /api/assets/:id - Update asset`);
+            console.log(`   DEL  /api/assets/:id - Delete asset`);
+            console.log(`   GET  /api/assets/stats - Asset statistics`);
+            console.log(`   POST /api/assets/bulk-import - Bulk import assets`);
         });
     }
     catch (error) {
