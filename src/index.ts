@@ -12,6 +12,7 @@ import maintenanceRoutes from './routes/maintenanceRoutes';
 import safetyInspectionRoutes from './routes/safetyInspectionRoutes';
 import employeeRoutes from './routes/employeeRoutes';
 import assetRoutes from './routes/assetRoutes';
+import ticketRoutes from './routes/ticketRoutes';
 
 // Load environment variables
 dotenv.config();
@@ -147,6 +148,7 @@ app.use('/api/maintenance', maintenanceRoutes);
 app.use('/api/safety-inspection', safetyInspectionRoutes);
 app.use('/api/employees', employeeRoutes);
 app.use('/api/assets', assetRoutes);
+app.use('/api/tickets', ticketRoutes);
 
 // Root endpoint
 app.get('/', (req: Request, res: Response): void => {

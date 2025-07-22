@@ -258,6 +258,7 @@ class AssetController {
         }
         catch (error) {
             console.error('Error creating asset:', error);
+            // Handle duplicate key error
             if (error.code === 11000) {
                 res.status(409).json({
                     success: false,
@@ -265,10 +266,39 @@ class AssetController {
                 });
                 return;
             }
+            // Handle mongoose validation errors
+            if (error.name === 'ValidationError') {
+                const validationErrors = Object.values(error.errors).map((err) => {
+                    if (err.kind === 'required') {
+                        return `${err.path} is required`;
+                    }
+                    else if (err.kind === 'enum') {
+                        return `${err.path} must be one of: ${err.properties.enumValues.join(', ')}`;
+                    }
+                    else if (err.kind === 'maxlength') {
+                        return `${err.path} cannot exceed ${err.properties.maxlength} characters`;
+                    }
+                    else if (err.kind === 'min') {
+                        return `${err.path} must be at least ${err.properties.min}`;
+                    }
+                    else if (err.kind === 'max') {
+                        return `${err.path} cannot exceed ${err.properties.max}`;
+                    }
+                    else {
+                        return `${err.path}: ${err.message}`;
+                    }
+                });
+                res.status(400).json({
+                    success: false,
+                    message: 'Validation failed',
+                    errors: validationErrors
+                });
+                return;
+            }
             res.status(500).json({
                 success: false,
                 message: 'Internal server error while creating asset',
-                error: process.env.NODE_ENV === 'development' ? error : undefined
+                error: process.env.NODE_ENV === 'development' ? error.message : undefined
             });
         }
     }

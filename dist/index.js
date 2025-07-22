@@ -17,6 +17,7 @@ const maintenanceRoutes_1 = __importDefault(require("./routes/maintenanceRoutes"
 const safetyInspectionRoutes_1 = __importDefault(require("./routes/safetyInspectionRoutes"));
 const employeeRoutes_1 = __importDefault(require("./routes/employeeRoutes"));
 const assetRoutes_1 = __importDefault(require("./routes/assetRoutes"));
+const ticketRoutes_1 = __importDefault(require("./routes/ticketRoutes"));
 // Load environment variables
 dotenv_1.default.config();
 const app = (0, express_1.default)();
@@ -137,6 +138,7 @@ app.use('/api/maintenance', maintenanceRoutes_1.default);
 app.use('/api/safety-inspection', safetyInspectionRoutes_1.default);
 app.use('/api/employees', employeeRoutes_1.default);
 app.use('/api/assets', assetRoutes_1.default);
+app.use('/api/tickets', ticketRoutes_1.default);
 // Root endpoint
 app.get('/', (req, res) => {
     res.status(200).json({
