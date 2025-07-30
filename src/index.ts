@@ -14,6 +14,7 @@ import employeeRoutes from './routes/employeeRoutes';
 import assetRoutes from './routes/assetRoutes';
 import ticketRoutes from './routes/ticketRoutes';
 import meetingMinutesRoutes from './routes/meetingMinutesRoutes';
+import dailyLogActivityRoutes from './routes/dailyLogActivityRoutes';
 
 // Load environment variables
 dotenv.config();
@@ -151,6 +152,7 @@ app.use('/api/employees', employeeRoutes);
 app.use('/api/assets', assetRoutes);
 app.use('/api/tickets', ticketRoutes);
 app.use('/api/meeting-minutes', meetingMinutesRoutes);
+app.use('/api/daily-log-activities', dailyLogActivityRoutes);
 
 // Root endpoint
 app.get('/', (req: Request, res: Response): void => {
@@ -168,6 +170,9 @@ app.get('/', (req: Request, res: Response): void => {
       safety_inspection: '/api/safety-inspection',
       employees: '/api/employees',
       assets: '/api/assets',
+      tickets: '/api/tickets',
+      meeting_minutes: '/api/meeting-minutes',
+      daily_log_activities: '/api/daily-log-activities',
       database_info: '/api/database/info'
     }
   });

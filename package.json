@@ -21,6 +21,7 @@
     "seed:safety-inspection": "ts-node src/scripts/seedSafetyInspection.ts",
     "seed:employees": "ts-node src/scripts/seedEmployees.ts",
     "populate:assets": "ts-node src/scripts/populateAssets.ts",
+    "update:asset-departments": "ts-node src/scripts/updateAssetDepartments.ts",
     "seed": "npm run seed:departments && npm run seed:shift-details && npm run seed:maintenance && npm run seed:employees",
     "db:setup": "npm run seed",
     "clean": "rm -rf dist"
