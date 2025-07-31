@@ -28,14 +28,33 @@ NODE_ENV=production
 FRONTEND_URL=https://your-frontend-domain.vercel.app
 ```
 
-### Deploy Commands:
-```bash
-# Build locally first to test
-npm run build
+### Deploy Options:
 
-# Deploy to Railway
+#### Option 1: Docker (Recommended)
+Uses the included `Dockerfile` for reliable builds:
+```bash
+# Deploy with Docker
 railway up
 ```
+
+#### Option 2: Auto-Detection
+If Docker fails, rename the configuration:
+```bash
+mv railway.json railway-docker.json
+mv railway-backup.json railway.json
+railway up
+```
+
+#### Option 3: Simple Script
+```bash
+# Run the deployment script
+./deploy.sh
+```
+
+#### Option 4: Manual Railway Dashboard
+1. Connect your GitHub repository
+2. Set environment variables in Railway dashboard
+3. Deploy automatically on push
 
 ## 🔍 Health Monitoring
 
@@ -60,6 +79,22 @@ The server now includes:
 
 ## 🔧 Troubleshooting
 
+### If Nixpacks fails with "undefined variable 'npm'":
+```bash
+# Solution 1: Use Docker instead
+# (Files already configured - just deploy)
+railway up
+
+# Solution 2: Switch to backup config
+mv railway.json railway-docker.json
+mv railway-backup.json railway.json
+railway up
+
+# Solution 3: Let Railway auto-detect
+rm railway.json
+railway up
+```
+
 ### If server crashes with OOM:
 1. Check Railway memory limits in dashboard
 2. Increase memory limit in `railway.json`
@@ -74,3 +109,8 @@ The server now includes:
 1. Clear `dist/` folder: `rm -rf dist`
 2. Clear node_modules: `rm -rf node_modules && npm install`
 3. Run build with verbose: `npm run build --verbose`
+
+### If Docker build fails:
+1. Check Dockerfile syntax
+2. Ensure all files are included (check `.dockerignore`)
+3. Try building locally: `docker build -t test .`
