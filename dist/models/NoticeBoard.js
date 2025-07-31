@@ -58,11 +58,9 @@ const NoticeBoardSchema = new mongoose_1.Schema({
         trim: true,
         validate: {
             validator: function (v) {
-                // Only validate URL if type is 'link' or 'file'
                 if (this.type === 'link' || this.type === 'file') {
                     if (!v)
                         return false;
-                    // Basic URL validation
                     try {
                         new URL(v);
                         return true;
@@ -163,24 +161,20 @@ const NoticeBoardSchema = new mongoose_1.Schema({
     timestamps: true,
     collection: 'noticeboards'
 });
-// Indexes for better performance
 NoticeBoardSchema.index({ isActive: 1, isPublished: 1, publishedAt: -1 });
 NoticeBoardSchema.index({ targetAudience: 1, targetDepartments: 1 });
 NoticeBoardSchema.index({ expiresAt: 1 });
 NoticeBoardSchema.index({ priority: 1, publishedAt: -1 });
 NoticeBoardSchema.index({ tags: 1 });
 NoticeBoardSchema.index({ createdBy: 1 });
-// Virtual to check if notice is expired
 NoticeBoardSchema.virtual('isExpired').get(function () {
     return this.expiresAt && this.expiresAt < new Date();
 });
-// Virtual to check if notice is visible (active, published, and not expired)
 NoticeBoardSchema.virtual('isVisible').get(function () {
     return this.isActive &&
         this.isPublished &&
         (!this.expiresAt || this.expiresAt > new Date());
 });
-// Method to check if user can view this notice
 NoticeBoardSchema.methods.canUserView = function (userDepartment, userRole) {
     if (!this.isVisible)
         return false;
@@ -195,9 +189,7 @@ NoticeBoardSchema.methods.canUserView = function (userDepartment, userRole) {
             return false;
     }
 };
-// Method to mark as viewed by user
 NoticeBoardSchema.methods.markAsViewed = function (userId, userName) {
-    // Check if user already viewed
     const existingView = this.viewedBy.find((view) => view.userId === userId);
     if (!existingView) {
         this.viewedBy.push({
@@ -210,4 +202,3 @@ NoticeBoardSchema.methods.markAsViewed = function (userId, userName) {
     return this.save();
 };
 exports.default = mongoose_1.default.model('NoticeBoard', NoticeBoardSchema);
-//# sourceMappingURL=NoticeBoard.js.map

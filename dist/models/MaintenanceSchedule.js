@@ -211,17 +211,14 @@ const MaintenanceScheduleSchema = new mongoose_1.Schema({
     timestamps: true,
     versionKey: false,
 });
-// Indexes for better query performance
 MaintenanceScheduleSchema.index({ assetId: 1, status: 1 });
 MaintenanceScheduleSchema.index({ nextDueDate: 1, status: 1 });
 MaintenanceScheduleSchema.index({ assignedTechnician: 1, status: 1 });
 MaintenanceScheduleSchema.index({ frequency: 1, priority: 1 });
 MaintenanceScheduleSchema.index({ title: 'text', assetName: 'text', location: 'text' });
-// Virtual for checking if overdue
 MaintenanceScheduleSchema.virtual('isOverdue').get(function () {
     return this.status === 'active' && this.nextDueDate < new Date();
 });
-// Pre-save middleware to update status based on due date
 MaintenanceScheduleSchema.pre('save', function (next) {
     const now = new Date();
     if (this.status === 'active' && this.nextDueDate < now) {
@@ -229,13 +226,11 @@ MaintenanceScheduleSchema.pre('save', function (next) {
     }
     next();
 });
-// Transform to frontend format
 MaintenanceScheduleSchema.set('toJSON', {
     transform: function (doc, ret) {
         ret.id = ret._id;
         delete ret._id;
         delete ret.__v;
-        // Transform nested parts and checklist items
         if (ret.parts) {
             ret.parts = ret.parts.map((part) => {
                 part.id = part._id;
@@ -255,4 +250,3 @@ MaintenanceScheduleSchema.set('toJSON', {
 });
 const MaintenanceSchedule = mongoose_1.default.model('MaintenanceSchedule', MaintenanceScheduleSchema);
 exports.default = MaintenanceSchedule;
-//# sourceMappingURL=MaintenanceSchedule.js.map

@@ -7,9 +7,7 @@ exports.sampleAssets = void 0;
 exports.populateAssets = populateAssets;
 const Asset_1 = __importDefault(require("../models/Asset"));
 const database_1 = __importDefault(require("../config/database"));
-// Sample asset data (matching the frontend data structure)
 const sampleAssets = [
-    // Equipment Example - Maintenance Department
     {
         assetName: "The Cat® 416F2 Backhoe Loader",
         serialNo: "A6381949",
@@ -194,7 +192,6 @@ const sampleAssets = [
             }
         ]
     },
-    // Equipment Example - IT Department
     {
         assetName: "Dell PowerEdge R740 Server",
         serialNo: "IT001949",
@@ -370,9 +367,6 @@ const sampleAssets = [
             }
         ]
     },
-    // Add other assets here...
-    // For brevity, I'll add just a few more key ones
-    // Tools Example - IT Department
     {
         assetName: "Heavy Duty Wrench Set (Metric)",
         serialNo: "HDWS-M-001",
@@ -512,17 +506,13 @@ const sampleAssets = [
 exports.sampleAssets = sampleAssets;
 async function populateAssets() {
     try {
-        // Connect to database
         const database = database_1.default.getInstance();
         await database.connect();
         console.log('✅ Connected to database');
-        // Clear existing assets
         await Asset_1.default.deleteMany({});
         console.log('🗑️  Cleared existing assets');
-        // Insert sample assets
         const result = await Asset_1.default.insertMany(sampleAssets);
         console.log(`✅ Successfully inserted ${result.length} assets`);
-        // Show summary
         const stats = await Asset_1.default.aggregate([
             {
                 $group: {
@@ -542,15 +532,12 @@ async function populateAssets() {
         console.error('❌ Error populating assets:', error);
     }
     finally {
-        // Disconnect from database
         const database = database_1.default.getInstance();
         await database.disconnect();
         console.log('💾 Disconnected from database');
         process.exit(0);
     }
 }
-// Run the population script
 if (require.main === module) {
     populateAssets();
 }
-//# sourceMappingURL=populateAssets.js.map

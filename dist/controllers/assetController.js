@@ -7,12 +7,10 @@ exports.AssetController = void 0;
 const express_validator_1 = require("express-validator");
 const Asset_1 = __importDefault(require("../models/Asset"));
 class AssetController {
-    // Get all assets with optional filtering and pagination
     static async getAllAssets(req, res) {
         try {
             const { page = 1, limit = 10, search, category, status, department, condition, manufacturer, location, sortBy = 'assetName', sortOrder = 'asc' } = req.query;
             const query = {};
-            // Exclude deleted assets by default
             query.deleted = { $ne: 'Yes' };
             if (category && category !== 'all') {
                 query.category = category;
@@ -44,10 +42,8 @@ class AssetController {
                     { description: { $regex: search, $options: 'i' } }
                 ];
             }
-            // Calculate pagination
             const skip = (Number(page) - 1) * Number(limit);
             const sortDirection = sortOrder === 'desc' ? -1 : 1;
-            // Execute query with pagination
             const [assets, totalCount] = await Promise.all([
                 Asset_1.default.find(query)
                     .sort({ [sortBy]: sortDirection })
@@ -56,7 +52,6 @@ class AssetController {
                     .lean(),
                 Asset_1.default.countDocuments(query)
             ]);
-            // Transform for frontend compatibility
             const transformedAssets = assets.map(asset => ({
                 id: asset._id.toString(),
                 assetName: asset.assetName,
@@ -136,7 +131,6 @@ class AssetController {
             });
         }
     }
-    // Get asset by ID
     static async getAssetById(req, res) {
         try {
             const { id } = req.params;
@@ -148,7 +142,6 @@ class AssetController {
                 });
                 return;
             }
-            // Transform for frontend compatibility
             const transformedAsset = {
                 id: asset._id.toString(),
                 assetName: asset.assetName,
@@ -219,10 +212,8 @@ class AssetController {
             });
         }
     }
-    // Create new asset
     static async createAsset(req, res) {
         try {
-            // Check validation errors
             const errors = (0, express_validator_1.validationResult)(req);
             if (!errors.isEmpty()) {
                 res.status(400).json({
@@ -233,7 +224,6 @@ class AssetController {
                 return;
             }
             const assetData = req.body;
-            // Check if asset with same serial number already exists (if serial number provided)
             if (assetData.serialNo) {
                 const existingAsset = await Asset_1.default.findOne({
                     serialNo: assetData.serialNo,
@@ -247,7 +237,6 @@ class AssetController {
                     return;
                 }
             }
-            // Create new asset
             const asset = new Asset_1.default(assetData);
             const savedAsset = await asset.save();
             res.status(201).json({
@@ -258,7 +247,6 @@ class AssetController {
         }
         catch (error) {
             console.error('Error creating asset:', error);
-            // Handle duplicate key error
             if (error.code === 11000) {
                 res.status(409).json({
                     success: false,
@@ -266,7 +254,6 @@ class AssetController {
                 });
                 return;
             }
-            // Handle mongoose validation errors
             if (error.name === 'ValidationError') {
                 const validationErrors = Object.values(error.errors).map((err) => {
                     if (err.kind === 'required') {
@@ -302,10 +289,8 @@ class AssetController {
             });
         }
     }
-    // Update asset
     static async updateAsset(req, res) {
         try {
-            // Check validation errors
             const errors = (0, express_validator_1.validationResult)(req);
             if (!errors.isEmpty()) {
                 res.status(400).json({
@@ -317,7 +302,6 @@ class AssetController {
             }
             const { id } = req.params;
             const updates = req.body;
-            // Check if asset exists
             const existingAsset = await Asset_1.default.findById(id);
             if (!existingAsset || existingAsset.deleted === 'Yes') {
                 res.status(404).json({
@@ -326,7 +310,6 @@ class AssetController {
                 });
                 return;
             }
-            // If serial number is being updated, check for duplicates
             if (updates.serialNo && updates.serialNo !== existingAsset.serialNo) {
                 const duplicateAsset = await Asset_1.default.findOne({
                     serialNo: updates.serialNo,
@@ -341,7 +324,6 @@ class AssetController {
                     return;
                 }
             }
-            // Update asset
             const updatedAsset = await Asset_1.default.findByIdAndUpdate(id, { $set: updates }, { new: true, runValidators: true }).lean();
             if (!updatedAsset) {
                 res.status(404).json({
@@ -375,7 +357,6 @@ class AssetController {
             });
         }
     }
-    // Delete asset (soft delete)
     static async deleteAsset(req, res) {
         try {
             const { id } = req.params;
@@ -387,7 +368,6 @@ class AssetController {
                 });
                 return;
             }
-            // Soft delete by setting deleted flag
             const deletedAsset = await Asset_1.default.findByIdAndUpdate(id, { $set: { deleted: 'Yes', isActive: 'No' } }, { new: true });
             res.status(200).json({
                 success: true,
@@ -408,7 +388,6 @@ class AssetController {
             });
         }
     }
-    // Get asset statistics
     static async getAssetStats(req, res) {
         try {
             const stats = await Asset_1.default.aggregate([
@@ -436,7 +415,6 @@ class AssetController {
                     }
                 }
             ]);
-            // Get category breakdown
             const categoryStats = await Asset_1.default.aggregate([
                 {
                     $match: { deleted: { $ne: 'Yes' } }
@@ -453,7 +431,6 @@ class AssetController {
                 },
                 { $sort: { count: -1 } }
             ]);
-            // Get department breakdown
             const departmentStats = await Asset_1.default.aggregate([
                 {
                     $match: { deleted: { $ne: 'Yes' } }
@@ -467,7 +444,6 @@ class AssetController {
                 },
                 { $sort: { count: -1 } }
             ]);
-            // Get condition breakdown
             const conditionStats = await Asset_1.default.aggregate([
                 {
                     $match: { deleted: { $ne: 'Yes' } }
@@ -480,7 +456,6 @@ class AssetController {
                 },
                 { $sort: { count: -1 } }
             ]);
-            // Get manufacturer breakdown (top 10)
             const manufacturerStats = await Asset_1.default.aggregate([
                 {
                     $match: {
@@ -525,7 +500,6 @@ class AssetController {
             });
         }
     }
-    // Bulk import assets
     static async bulkImportAssets(req, res) {
         try {
             const { assets } = req.body;
@@ -536,7 +510,6 @@ class AssetController {
                 });
                 return;
             }
-            // Validate that each asset has required fields
             const invalidAssets = assets.filter(asset => !asset.assetName || !asset.category || !asset.department);
             if (invalidAssets.length > 0) {
                 res.status(400).json({
@@ -546,7 +519,6 @@ class AssetController {
                 });
                 return;
             }
-            // Check for duplicate serial numbers in the import
             const serialNumbers = assets
                 .filter(asset => asset.serialNo)
                 .map(asset => asset.serialNo);
@@ -558,7 +530,6 @@ class AssetController {
                 });
                 return;
             }
-            // Check for existing serial numbers in database
             if (uniqueSerialNumbers.length > 0) {
                 const existingAssets = await Asset_1.default.find({
                     serialNo: { $in: uniqueSerialNumbers },
@@ -573,7 +544,6 @@ class AssetController {
                     return;
                 }
             }
-            // Bulk insert assets
             const createdAssets = await Asset_1.default.insertMany(assets);
             res.status(201).json({
                 success: true,
@@ -595,4 +565,3 @@ class AssetController {
     }
 }
 exports.AssetController = AssetController;
-//# sourceMappingURL=assetController.js.map

@@ -145,16 +145,13 @@ const MeetingMinutesSchema = new mongoose_1.Schema({
     timestamps: true,
     versionKey: false,
 });
-// Indexes for better query performance
 MeetingMinutesSchema.index({ department: 1, meetingDateTime: -1 });
 MeetingMinutesSchema.index({ createdBy: 1, meetingDateTime: -1 });
 MeetingMinutesSchema.index({ department: 1, status: 1 });
 MeetingMinutesSchema.index({ title: 'text', purpose: 'text', minutes: 'text' });
-// Virtual for formatted meeting info
 MeetingMinutesSchema.virtual('displayInfo').get(function () {
     return `${this.title} - ${this.department} (${this.meetingDateTime.toLocaleDateString()})`;
 });
-// Pre-save middleware to ensure proper capitalization
 MeetingMinutesSchema.pre('save', function (next) {
     if (this.title) {
         this.title = this.title.charAt(0).toUpperCase() + this.title.slice(1);
@@ -164,7 +161,6 @@ MeetingMinutesSchema.pre('save', function (next) {
     }
     next();
 });
-// Transform to frontend format
 MeetingMinutesSchema.set('toJSON', {
     transform: function (doc, ret) {
         ret.id = ret._id;
@@ -175,4 +171,3 @@ MeetingMinutesSchema.set('toJSON', {
 });
 const MeetingMinutes = mongoose_1.default.model('MeetingMinutes', MeetingMinutesSchema);
 exports.default = MeetingMinutes;
-//# sourceMappingURL=MeetingMinutes.js.map

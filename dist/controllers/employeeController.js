@@ -7,11 +7,9 @@ exports.EmployeeController = void 0;
 const express_validator_1 = require("express-validator");
 const Employee_1 = __importDefault(require("../models/Employee"));
 class EmployeeController {
-    // Get all employees with optional filtering and pagination
     static async getAllEmployees(req, res) {
         try {
             const { page = 1, limit = 10, search, status, department, role, sortBy = 'name', sortOrder = 'asc' } = req.query;
-            // Build query
             const query = {};
             if (status && status !== 'all') {
                 query.status = status;
@@ -31,10 +29,8 @@ class EmployeeController {
                     { role: { $regex: search, $options: 'i' } }
                 ];
             }
-            // Calculate pagination
             const skip = (Number(page) - 1) * Number(limit);
             const sortDirection = sortOrder === 'desc' ? -1 : 1;
-            // Execute query with pagination
             const [employees, totalCount] = await Promise.all([
                 Employee_1.default.find(query)
                     .sort({ [sortBy]: sortDirection })
@@ -43,7 +39,6 @@ class EmployeeController {
                     .lean(),
                 Employee_1.default.countDocuments(query)
             ]);
-            // Transform for frontend compatibility
             const transformedEmployees = employees.map(emp => ({
                 id: emp._id.toString(),
                 name: emp.name,
@@ -80,7 +75,6 @@ class EmployeeController {
             });
         }
     }
-    // Get employee by ID
     static async getEmployeeById(req, res) {
         try {
             const { id } = req.params;
@@ -92,7 +86,6 @@ class EmployeeController {
                 });
                 return;
             }
-            // Transform for frontend compatibility
             const transformedEmployee = {
                 id: employee._id.toString(),
                 name: employee.name,
@@ -120,10 +113,8 @@ class EmployeeController {
             });
         }
     }
-    // Create new employee
     static async createEmployee(req, res) {
         try {
-            // Check validation errors
             const errors = (0, express_validator_1.validationResult)(req);
             if (!errors.isEmpty()) {
                 res.status(400).json({
@@ -134,7 +125,6 @@ class EmployeeController {
                 return;
             }
             const { name, email, phone, department, role, status = 'active', avatar } = req.body;
-            // Check if employee email already exists
             const existingEmployee = await Employee_1.default.findOne({
                 email: email.toLowerCase()
             });
@@ -145,7 +135,6 @@ class EmployeeController {
                 });
                 return;
             }
-            // Create new employee
             const employee = new Employee_1.default({
                 name,
                 email: email.toLowerCase(),
@@ -156,7 +145,6 @@ class EmployeeController {
                 avatar: avatar || '/placeholder-user.jpg'
             });
             const savedEmployee = await employee.save();
-            // Transform for frontend compatibility
             const transformedEmployee = {
                 id: savedEmployee._id.toString(),
                 name: savedEmployee.name,
@@ -191,10 +179,8 @@ class EmployeeController {
             });
         }
     }
-    // Update employee
     static async updateEmployee(req, res) {
         try {
-            // Check validation errors
             const errors = (0, express_validator_1.validationResult)(req);
             if (!errors.isEmpty()) {
                 res.status(400).json({
@@ -206,7 +192,6 @@ class EmployeeController {
             }
             const { id } = req.params;
             const updates = req.body;
-            // Check if employee exists
             const existingEmployee = await Employee_1.default.findById(id);
             if (!existingEmployee) {
                 res.status(404).json({
@@ -215,7 +200,6 @@ class EmployeeController {
                 });
                 return;
             }
-            // If email is being updated, check for duplicates
             if (updates.email && updates.email.toLowerCase() !== existingEmployee.email) {
                 const duplicateEmployee = await Employee_1.default.findOne({
                     email: updates.email.toLowerCase(),
@@ -229,11 +213,9 @@ class EmployeeController {
                     return;
                 }
             }
-            // Normalize email if provided
             if (updates.email) {
                 updates.email = updates.email.toLowerCase();
             }
-            // Update employee
             const updatedEmployee = await Employee_1.default.findByIdAndUpdate(id, { $set: updates }, { new: true, runValidators: true }).lean();
             if (!updatedEmployee) {
                 res.status(404).json({
@@ -242,7 +224,6 @@ class EmployeeController {
                 });
                 return;
             }
-            // Transform for frontend compatibility
             const transformedEmployee = {
                 id: updatedEmployee._id.toString(),
                 name: updatedEmployee.name,
@@ -277,7 +258,6 @@ class EmployeeController {
             });
         }
     }
-    // Delete employee
     static async deleteEmployee(req, res) {
         try {
             const { id } = req.params;
@@ -308,7 +288,6 @@ class EmployeeController {
             });
         }
     }
-    // Get employee statistics
     static async getEmployeeStats(req, res) {
         try {
             const stats = await Employee_1.default.aggregate([
@@ -325,7 +304,6 @@ class EmployeeController {
                     }
                 }
             ]);
-            // Get department breakdown
             const departmentStats = await Employee_1.default.aggregate([
                 {
                     $group: {
@@ -338,7 +316,6 @@ class EmployeeController {
                 },
                 { $sort: { count: -1 } }
             ]);
-            // Get role breakdown
             const roleStats = await Employee_1.default.aggregate([
                 {
                     $group: {
@@ -373,4 +350,3 @@ class EmployeeController {
     }
 }
 exports.EmployeeController = EmployeeController;
-//# sourceMappingURL=employeeController.js.map

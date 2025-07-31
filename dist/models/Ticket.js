@@ -211,14 +211,12 @@ const TicketSchema = new mongoose_1.Schema({
     timestamps: true,
     versionKey: false,
 });
-// Indexes for better query performance
 TicketSchema.index({ department: 1, status: 1 });
 TicketSchema.index({ equipmentId: 1, status: 1 });
 TicketSchema.index({ priority: 1, loggedDateTime: -1 });
 TicketSchema.index({ assignedDepartments: 1, isOpenTicket: 1 });
 TicketSchema.index({ loggedBy: 1, status: 1 });
-TicketSchema.index({ subject: 'text', description: 'text' }); // Text search
-// Pre-save middleware to auto-generate ticket ID
+TicketSchema.index({ subject: 'text', description: 'text' });
 TicketSchema.pre('save', async function (next) {
     if (this.isNew && !this.ticketId) {
         const currentYear = new Date().getFullYear();
@@ -227,18 +225,15 @@ TicketSchema.pre('save', async function (next) {
         });
         this.ticketId = `TKT-${currentYear}-${String(count + 1).padStart(6, '0')}`;
     }
-    // Auto-close ticket when status is set to 'Closed'
     if (this.status === 'Closed' && !this.ticketCloseDate) {
         this.ticketCloseDate = new Date();
     }
-    // Calculate total time if ticket is closed
     if (this.status === 'Closed' && this.ticketCloseDate && this.loggedDateTime) {
         const totalMs = this.ticketCloseDate.getTime() - this.loggedDateTime.getTime();
-        this.totalTime = Math.round(totalMs / (1000 * 60 * 60)); // Convert to hours
+        this.totalTime = Math.round(totalMs / (1000 * 60 * 60));
     }
     next();
 });
-// Pre-save middleware to add activity log entry
 TicketSchema.pre('save', function (next) {
     if (this.isNew) {
         this.activityLog.push({
@@ -250,11 +245,9 @@ TicketSchema.pre('save', function (next) {
     }
     next();
 });
-// Virtual for display status with priority
 TicketSchema.virtual('displayStatus').get(function () {
     return `${this.status} (${this.priority} Priority)`;
 });
-// Virtual for time since logged
 TicketSchema.virtual('timeSinceLogged').get(function () {
     const now = new Date();
     const diffMs = now.getTime() - this.loggedDateTime.getTime();
@@ -271,7 +264,6 @@ TicketSchema.virtual('timeSinceLogged').get(function () {
         return `${Math.max(1, diffMinutes)} minute${diffMinutes > 1 ? 's' : ''} ago`;
     }
 });
-// Transform to frontend format
 TicketSchema.set('toJSON', {
     transform: function (doc, ret) {
         ret.id = ret._id;
@@ -282,4 +274,3 @@ TicketSchema.set('toJSON', {
 });
 const Ticket = mongoose_1.default.model('Ticket', TicketSchema);
 exports.default = Ticket;
-//# sourceMappingURL=Ticket.js.map

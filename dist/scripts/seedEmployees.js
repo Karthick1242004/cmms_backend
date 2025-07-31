@@ -189,25 +189,20 @@ const sampleEmployees = [
 ];
 async function seedEmployees() {
     try {
-        // Connect to database
         const database = database_1.default.getInstance();
         await database.connect();
-        // Clear existing employees (optional - remove if you want to keep existing data)
         console.log('🧹 Clearing existing employees...');
         await Employee_1.default.deleteMany({});
-        // Insert sample employees
         console.log('🌱 Seeding employees...');
         const insertedEmployees = await Employee_1.default.insertMany(sampleEmployees);
         console.log(`✅ Successfully seeded ${insertedEmployees.length} employees:`);
         insertedEmployees.forEach((emp, index) => {
             console.log(`   ${index + 1}. ${emp.name} - ${emp.department} (${emp.role})`);
         });
-        // Display database info
         const connectionInfo = await database.getConnectionInfo();
         console.log('\n📊 Database Information:');
         console.log(`   Database: ${connectionInfo.name}`);
         console.log(`   Collections: ${connectionInfo.collections?.map((c) => c.name).join(', ')}`);
-        // Get employee statistics
         const stats = await Employee_1.default.aggregate([
             {
                 $group: {
@@ -222,7 +217,6 @@ async function seedEmployees() {
                 }
             }
         ]);
-        // Get department breakdown
         const departmentStats = await Employee_1.default.aggregate([
             {
                 $group: {
@@ -253,9 +247,7 @@ async function seedEmployees() {
         process.exit(1);
     }
 }
-// Run the seed function if this script is executed directly
 if (require.main === module) {
     seedEmployees();
 }
 exports.default = seedEmployees;
-//# sourceMappingURL=seedEmployees.js.map

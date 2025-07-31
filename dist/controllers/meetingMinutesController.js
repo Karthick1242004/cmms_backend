@@ -7,25 +7,19 @@ exports.MeetingMinutesController = void 0;
 const express_validator_1 = require("express-validator");
 const MeetingMinutes_1 = __importDefault(require("../models/MeetingMinutes"));
 class MeetingMinutesController {
-    // Get all meeting minutes with department-based filtering
     static async getAllMeetingMinutes(req, res) {
         try {
             const { page = 1, limit = 10, search, department, status, sortBy = 'meetingDateTime', sortOrder = 'desc', dateFrom, dateTo, } = req.query;
-            // Build query based on user role and department
             const query = {};
-            // If user is not admin, only show their department's meeting minutes
             if (req.user?.role !== 'admin') {
                 query.department = req.user?.department;
             }
             else if (department && department !== 'all') {
-                // Admin can filter by specific department
                 query.department = department;
             }
-            // Status filter
             if (status && status !== 'all') {
                 query.status = status;
             }
-            // Date range filter
             if (dateFrom || dateTo) {
                 query.meetingDateTime = {};
                 if (dateFrom) {
@@ -35,7 +29,6 @@ class MeetingMinutesController {
                     query.meetingDateTime.$lte = new Date(dateTo);
                 }
             }
-            // Search functionality
             if (search) {
                 query.$or = [
                     { title: { $regex: search, $options: 'i' } },
@@ -46,10 +39,8 @@ class MeetingMinutesController {
                     { 'tags': { $regex: search, $options: 'i' } },
                 ];
             }
-            // Calculate pagination
             const skip = (Number(page) - 1) * Number(limit);
             const sortDirection = sortOrder === 'desc' ? -1 : 1;
-            // Execute query with pagination
             const [meetingMinutes, totalCount] = await Promise.all([
                 MeetingMinutes_1.default.find(query)
                     .sort({ [sortBy]: sortDirection })
@@ -58,7 +49,6 @@ class MeetingMinutesController {
                     .lean(),
                 MeetingMinutes_1.default.countDocuments(query)
             ]);
-            // Transform for frontend compatibility
             const transformedMeetingMinutes = meetingMinutes.map(mom => ({
                 id: mom._id.toString(),
                 title: mom.title,
@@ -80,7 +70,6 @@ class MeetingMinutesController {
                 canEdit: req.user?.role === 'admin' || mom.createdBy === req.user?.id,
                 canDelete: req.user?.role === 'admin' || mom.createdBy === req.user?.id,
             }));
-            // Calculate pagination info
             const totalPages = Math.ceil(totalCount / Number(limit));
             const hasNext = Number(page) < totalPages;
             const hasPrevious = Number(page) > 1;
@@ -108,7 +97,6 @@ class MeetingMinutesController {
             });
         }
     }
-    // Get meeting minutes by ID
     static async getMeetingMinutesById(req, res) {
         try {
             const { id } = req.params;
@@ -120,7 +108,6 @@ class MeetingMinutesController {
                 });
                 return;
             }
-            // Check if user has access to this meeting minutes
             if (req.user?.role !== 'admin' && meetingMinutes.department !== req.user?.department) {
                 res.status(403).json({
                     success: false,
@@ -128,7 +115,6 @@ class MeetingMinutesController {
                 });
                 return;
             }
-            // Transform for frontend
             const transformedMeetingMinutes = {
                 id: meetingMinutes._id.toString(),
                 title: meetingMinutes.title,
@@ -165,10 +151,8 @@ class MeetingMinutesController {
             });
         }
     }
-    // Create new meeting minutes
     static async createMeetingMinutes(req, res) {
         try {
-            // Check validation errors
             const errors = (0, express_validator_1.validationResult)(req);
             if (!errors.isEmpty()) {
                 res.status(400).json({
@@ -179,12 +163,10 @@ class MeetingMinutesController {
                 return;
             }
             const { title, department, meetingDateTime, purpose, minutes, attendees = [], status = 'published', tags = [], location, duration, actionItems = [], attachments = [], } = req.body;
-            // For non-admin users, ensure they can only create for their department
             let finalDepartment = department;
             if (req.user?.role !== 'admin') {
                 finalDepartment = req.user?.department;
             }
-            // Create new meeting minutes
             const newMeetingMinutes = new MeetingMinutes_1.default({
                 title,
                 department: finalDepartment,
@@ -202,7 +184,6 @@ class MeetingMinutesController {
                 attachments,
             });
             const savedMeetingMinutes = await newMeetingMinutes.save();
-            // Transform for frontend
             const transformedMeetingMinutes = {
                 id: savedMeetingMinutes._id.toString(),
                 title: savedMeetingMinutes.title,
@@ -237,11 +218,9 @@ class MeetingMinutesController {
             });
         }
     }
-    // Update meeting minutes
     static async updateMeetingMinutes(req, res) {
         try {
             const { id } = req.params;
-            // Check validation errors
             const errors = (0, express_validator_1.validationResult)(req);
             if (!errors.isEmpty()) {
                 res.status(400).json({
@@ -251,7 +230,6 @@ class MeetingMinutesController {
                 });
                 return;
             }
-            // Find existing meeting minutes
             const existingMeetingMinutes = await MeetingMinutes_1.default.findById(id);
             if (!existingMeetingMinutes) {
                 res.status(404).json({
@@ -260,7 +238,6 @@ class MeetingMinutesController {
                 });
                 return;
             }
-            // Check permissions - only creator or admin can edit
             if (req.user?.role !== 'admin' && existingMeetingMinutes.createdBy !== req.user?.id) {
                 res.status(403).json({
                     success: false,
@@ -268,12 +245,10 @@ class MeetingMinutesController {
                 });
                 return;
             }
-            // For non-admin users, prevent department changes
             const updateData = { ...req.body };
             if (req.user?.role !== 'admin' && updateData.department) {
                 delete updateData.department;
             }
-            // Update meeting minutes
             const updatedMeetingMinutes = await MeetingMinutes_1.default.findByIdAndUpdate(id, { ...updateData, updatedAt: new Date() }, { new: true, runValidators: true }).lean();
             if (!updatedMeetingMinutes) {
                 res.status(404).json({
@@ -282,7 +257,6 @@ class MeetingMinutesController {
                 });
                 return;
             }
-            // Transform for frontend
             const transformedMeetingMinutes = {
                 id: updatedMeetingMinutes._id.toString(),
                 title: updatedMeetingMinutes.title,
@@ -317,11 +291,9 @@ class MeetingMinutesController {
             });
         }
     }
-    // Delete meeting minutes
     static async deleteMeetingMinutes(req, res) {
         try {
             const { id } = req.params;
-            // Find existing meeting minutes
             const existingMeetingMinutes = await MeetingMinutes_1.default.findById(id);
             if (!existingMeetingMinutes) {
                 res.status(404).json({
@@ -330,7 +302,6 @@ class MeetingMinutesController {
                 });
                 return;
             }
-            // Check permissions - only creator or admin can delete
             if (req.user?.role !== 'admin' && existingMeetingMinutes.createdBy !== req.user?.id) {
                 res.status(403).json({
                     success: false,
@@ -353,10 +324,8 @@ class MeetingMinutesController {
             });
         }
     }
-    // Get meeting minutes statistics
     static async getMeetingMinutesStats(req, res) {
         try {
-            // Build department filter based on user role
             const departmentFilter = {};
             if (req.user?.role !== 'admin') {
                 departmentFilter.department = req.user?.department;
@@ -416,12 +385,10 @@ class MeetingMinutesController {
             });
         }
     }
-    // Update action item status
     static async updateActionItemStatus(req, res) {
         try {
             const { id } = req.params;
             const { actionItemId, status } = req.body;
-            // Find the meeting minutes
             const meetingMinutes = await MeetingMinutes_1.default.findById(id);
             if (!meetingMinutes) {
                 res.status(404).json({
@@ -430,7 +397,6 @@ class MeetingMinutesController {
                 });
                 return;
             }
-            // Check if user has access to this meeting minutes
             if (req.user?.role !== 'admin' && meetingMinutes.department !== req.user?.department) {
                 res.status(403).json({
                     success: false,
@@ -438,7 +404,6 @@ class MeetingMinutesController {
                 });
                 return;
             }
-            // Find and update the action item
             const actionItemIndex = meetingMinutes.actionItems.findIndex((item) => item._id?.toString() === actionItemId);
             if (actionItemIndex === -1) {
                 res.status(404).json({
@@ -447,7 +412,6 @@ class MeetingMinutesController {
                 });
                 return;
             }
-            // Update the action item status
             const actionItem = meetingMinutes.actionItems[actionItemIndex];
             if (actionItem) {
                 actionItem.status = status;
@@ -476,4 +440,3 @@ class MeetingMinutesController {
     }
 }
 exports.MeetingMinutesController = MeetingMinutesController;
-//# sourceMappingURL=meetingMinutesController.js.map

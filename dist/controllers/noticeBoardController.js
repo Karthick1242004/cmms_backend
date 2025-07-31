@@ -6,7 +6,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.getNoticeBoardStats = exports.togglePublishNotice = exports.deleteNoticeBoard = exports.updateNoticeBoard = exports.createNoticeBoard = exports.getNoticeBoardById = exports.getAllNoticeBoard = void 0;
 const NoticeBoard_1 = __importDefault(require("../models/NoticeBoard"));
 const Department_1 = __importDefault(require("../models/Department"));
-// Get all notice board entries with filtering, pagination, and user-specific visibility
 const getAllNoticeBoard = async (req, res) => {
     try {
         const { page = 1, limit = 10, priority, type, targetAudience, isActive, isPublished, search, tags } = req.query;
@@ -20,7 +19,6 @@ const getAllNoticeBoard = async (req, res) => {
         const userId = req.user.id;
         const userDepartment = req.user.department;
         const userRole = req.user.role;
-        // Build query for visible notices
         const query = {
             isActive: true,
             isPublished: true,
@@ -30,7 +28,6 @@ const getAllNoticeBoard = async (req, res) => {
                 { expiresAt: { $gt: new Date() } }
             ]
         };
-        // Apply user-specific visibility filters
         const visibilityConditions = [
             { targetAudience: 'all' },
             { targetAudience: 'department', targetDepartments: userDepartment },
@@ -39,7 +36,6 @@ const getAllNoticeBoard = async (req, res) => {
         query.$and = [
             { $or: visibilityConditions }
         ];
-        // Apply additional filters if provided (admin-only filters)
         if (userRole === 'admin') {
             if (isActive !== undefined) {
                 query.isActive = isActive === 'true';
@@ -51,14 +47,12 @@ const getAllNoticeBoard = async (req, res) => {
                 query.targetAudience = targetAudience;
             }
         }
-        // Apply common filters
         if (priority) {
             query.priority = priority;
         }
         if (type) {
             query.type = type;
         }
-        // Search functionality
         if (search) {
             query.$and = query.$and || [];
             query.$and.push({
@@ -69,26 +63,22 @@ const getAllNoticeBoard = async (req, res) => {
                 ]
             });
         }
-        // Tag filtering
         if (tags) {
             const tagArray = Array.isArray(tags) ? tags : [tags];
             query.tags = { $in: tagArray };
         }
-        // Calculate pagination
         const pageNum = parseInt(page);
         const limitNum = parseInt(limit);
         const skip = (pageNum - 1) * limitNum;
-        // Execute query with pagination
         const [notices, totalCount] = await Promise.all([
             NoticeBoard_1.default.find(query)
                 .sort({ priority: -1, publishedAt: -1, createdAt: -1 })
                 .skip(skip)
                 .limit(limitNum)
-                .select('-viewedBy') // Exclude viewedBy array from list view for performance
+                .select('-viewedBy')
                 .lean(),
             NoticeBoard_1.default.countDocuments(query)
         ]);
-        // Calculate pagination info
         const totalPages = Math.ceil(totalCount / limitNum);
         const hasNext = pageNum < totalPages;
         const hasPrevious = pageNum > 1;
@@ -117,7 +107,6 @@ const getAllNoticeBoard = async (req, res) => {
     }
 };
 exports.getAllNoticeBoard = getAllNoticeBoard;
-// Get single notice board entry by ID
 const getNoticeBoardById = async (req, res) => {
     try {
         const { id } = req.params;
@@ -137,7 +126,6 @@ const getNoticeBoardById = async (req, res) => {
             });
             return;
         }
-        // Check if user can view this notice
         const canView = notice.canUserView(userDepartment, userRole) || userRole === 'admin';
         if (!canView) {
             res.status(403).json({
@@ -146,7 +134,6 @@ const getNoticeBoardById = async (req, res) => {
             });
             return;
         }
-        // Mark as viewed if user is not admin and hasn't viewed before
         if (userRole !== 'admin' && userId && userName) {
             await notice.markAsViewed(userId, userName);
         }
@@ -166,7 +153,6 @@ const getNoticeBoardById = async (req, res) => {
     }
 };
 exports.getNoticeBoardById = getNoticeBoardById;
-// Create new notice board entry (admin only)
 const createNoticeBoard = async (req, res) => {
     try {
         if (!req.user) {
@@ -177,7 +163,6 @@ const createNoticeBoard = async (req, res) => {
             return;
         }
         const { id: userId, name: userName, role: userRole } = req.user;
-        // Check if user is admin
         if (userRole !== 'admin') {
             res.status(403).json({
                 success: false,
@@ -186,7 +171,6 @@ const createNoticeBoard = async (req, res) => {
             return;
         }
         const { title, content, type = 'text', linkUrl, fileName, fileType, priority = 'medium', targetAudience = 'all', targetDepartments = [], targetRoles = [], expiresAt, tags = [], isPublished = false } = req.body;
-        // Validate target departments exist
         if (targetAudience === 'department' && targetDepartments.length > 0) {
             const existingDepts = await Department_1.default.find({
                 _id: { $in: targetDepartments }
@@ -199,7 +183,6 @@ const createNoticeBoard = async (req, res) => {
                 return;
             }
         }
-        // Create notice
         const noticeData = {
             title,
             content,
@@ -237,7 +220,6 @@ const createNoticeBoard = async (req, res) => {
     }
 };
 exports.createNoticeBoard = createNoticeBoard;
-// Update notice board entry (admin only)
 const updateNoticeBoard = async (req, res) => {
     try {
         const { id } = req.params;
@@ -249,7 +231,6 @@ const updateNoticeBoard = async (req, res) => {
             return;
         }
         const { id: userId, name: userName, role: userRole } = req.user;
-        // Check if user is admin
         if (userRole !== 'admin') {
             res.status(403).json({
                 success: false,
@@ -266,7 +247,6 @@ const updateNoticeBoard = async (req, res) => {
             return;
         }
         const { title, content, type, linkUrl, fileName, fileType, priority, targetAudience, targetDepartments, targetRoles, expiresAt, tags, isActive, isPublished } = req.body;
-        // Validate target departments if provided
         if (targetAudience === 'department' && targetDepartments?.length > 0) {
             const existingDepts = await Department_1.default.find({
                 _id: { $in: targetDepartments }
@@ -279,7 +259,6 @@ const updateNoticeBoard = async (req, res) => {
                 return;
             }
         }
-        // Update fields
         if (title !== undefined)
             notice.title = title;
         if (content !== undefined)
@@ -336,7 +315,6 @@ const updateNoticeBoard = async (req, res) => {
     }
 };
 exports.updateNoticeBoard = updateNoticeBoard;
-// Delete notice board entry (admin only)
 const deleteNoticeBoard = async (req, res) => {
     try {
         const { id } = req.params;
@@ -348,7 +326,6 @@ const deleteNoticeBoard = async (req, res) => {
             return;
         }
         const { role: userRole } = req.user;
-        // Check if user is admin
         if (userRole !== 'admin') {
             res.status(403).json({
                 success: false,
@@ -380,7 +357,6 @@ const deleteNoticeBoard = async (req, res) => {
     }
 };
 exports.deleteNoticeBoard = deleteNoticeBoard;
-// Publish/unpublish notice (admin only)
 const togglePublishNotice = async (req, res) => {
     try {
         const { id } = req.params;
@@ -393,7 +369,6 @@ const togglePublishNotice = async (req, res) => {
             return;
         }
         const { id: userId, name: userName, role: userRole } = req.user;
-        // Check if user is admin
         if (userRole !== 'admin') {
             res.status(403).json({
                 success: false,
@@ -432,7 +407,6 @@ const togglePublishNotice = async (req, res) => {
     }
 };
 exports.togglePublishNotice = togglePublishNotice;
-// Get notice board statistics (admin only)
 const getNoticeBoardStats = async (req, res) => {
     try {
         if (!req.user) {
@@ -443,7 +417,6 @@ const getNoticeBoardStats = async (req, res) => {
             return;
         }
         const { role: userRole } = req.user;
-        // Check if user is admin
         if (userRole !== 'admin') {
             res.status(403).json({
                 success: false,
@@ -469,7 +442,6 @@ const getNoticeBoardStats = async (req, res) => {
                 .limit(5)
                 .select('title priority publishedAt viewCount')
         ]);
-        // Calculate average view count
         const viewStats = await NoticeBoard_1.default.aggregate([
             { $match: { isPublished: true } },
             { $group: {
@@ -512,4 +484,3 @@ const getNoticeBoardStats = async (req, res) => {
     }
 };
 exports.getNoticeBoardStats = getNoticeBoardStats;
-//# sourceMappingURL=noticeBoardController.js.map

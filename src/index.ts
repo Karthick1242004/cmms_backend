@@ -22,8 +22,13 @@ import noticeBoardRoutes from './routes/noticeBoardRoutes';
 dotenv.config();
 
 const app: Application = express();
-const PORT = process.env.PORT || 5001;
+const PORT = process.env.PORT || process.env.SERVER_PORT || 5001;
 const NODE_ENV = process.env.NODE_ENV || 'development';
+
+// Set production defaults for Railway
+if (process.env.RAILWAY_ENVIRONMENT) {
+  process.env.NODE_ENV = 'production';
+}
 
 // Rate limiting
 const limiter = rateLimit({
@@ -44,7 +49,9 @@ app.use(helmet({
 const allowedOrigins: string[] = [
   'http://localhost:3000',
   'http://localhost:3001',
-  'https://cmms-dashboard.vercel.app'
+  'https://cmms-dashboard.vercel.app',
+  'https://cms-dashboard-frontend.vercel.app',
+  'https://cms-dashboard-frontend-karthicks.vercel.app'
 ];
 
 // Add frontend URL if provided (avoid array spread in production)
@@ -53,7 +60,27 @@ if (process.env.FRONTEND_URL && !allowedOrigins.includes(process.env.FRONTEND_UR
 }
 
 app.use(cors({
-  origin: allowedOrigins,
+  origin: (origin, callback) => {
+    // Allow requests with no origin (mobile apps, curl, etc.)
+    if (!origin) return callback(null, true);
+    
+    // Check if origin is in allowed list
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    
+    // In production, allow any vercel.app subdomain
+    if (NODE_ENV === 'production' && origin.endsWith('.vercel.app')) {
+      return callback(null, true);
+    }
+    
+    // Allow railway.app domains for the backend
+    if (origin.endsWith('.railway.app')) {
+      return callback(null, true);
+    }
+    
+    return callback(new Error('Not allowed by CORS'), false);
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: [
@@ -72,30 +99,31 @@ app.use(cors({
 
 // Body parsing middleware with error handling
 app.use(express.json({ 
-  limit: '10mb',
+  limit: '5mb', // Reduced from 10mb to prevent memory issues
   verify: (req: any, res: any, buf: Buffer, encoding: string) => {
-    try {
-      JSON.parse(buf.toString());
-    } catch (error) {
-      res.status(400).json({
-        success: false,
-        message: 'Invalid JSON in request body'
-      });
-      throw new Error('Invalid JSON');
+    if (buf.length > 0) {
+      try {
+        JSON.parse(buf.toString());
+      } catch (error) {
+        res.status(400).json({
+          success: false,
+          message: 'Invalid JSON in request body'
+        });
+        throw new Error('Invalid JSON');
+      }
     }
   }
 }));
 
 app.use(express.urlencoded({ 
   extended: true, 
-  limit: '10mb',
+  limit: '5mb', // Reduced from 10mb
+  parameterLimit: 1000, // Limit number of parameters
   verify: (req: any, res: any, buf: Buffer, encoding: string) => {
-    if (buf.length === 0) {
-      res.status(400).json({
-        success: false,
-        message: 'Empty request body'
-      });
-      throw new Error('Empty body');
+    // Allow empty bodies for GET requests
+    if (buf.length === 0 && req.method !== 'GET') {
+      // Only check for non-GET requests
+      return;
     }
   }
 }));

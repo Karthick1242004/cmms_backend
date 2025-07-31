@@ -79,25 +79,20 @@ const sampleDepartments = [
 ];
 async function seedDepartments() {
     try {
-        // Connect to database
         const database = database_1.default.getInstance();
         await database.connect();
-        // Clear existing departments (optional - remove if you want to keep existing data)
         console.log('🧹 Clearing existing departments...');
         await Department_1.default.deleteMany({});
-        // Insert sample departments
         console.log('🌱 Seeding departments...');
         const insertedDepartments = await Department_1.default.insertMany(sampleDepartments);
         console.log(`✅ Successfully seeded ${insertedDepartments.length} departments:`);
         insertedDepartments.forEach((dept, index) => {
             console.log(`   ${index + 1}. ${dept.name} (Manager: ${dept.manager})`);
         });
-        // Display database info
         const connectionInfo = await database.getConnectionInfo();
         console.log('\n📊 Database Information:');
         console.log(`   Database: ${connectionInfo.name}`);
         console.log(`   Collections: ${connectionInfo.collections?.map((c) => c.name).join(', ')}`);
-        // Get department statistics
         const stats = await Department_1.default.aggregate([
             {
                 $group: {
@@ -130,9 +125,7 @@ async function seedDepartments() {
         process.exit(1);
     }
 }
-// Run the seed function if this script is executed directly
 if (require.main === module) {
     seedDepartments();
 }
 exports.default = seedDepartments;
-//# sourceMappingURL=seedDepartments.js.map

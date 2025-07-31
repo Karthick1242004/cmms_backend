@@ -73,14 +73,11 @@ const DepartmentSchema = new mongoose_1.Schema({
     timestamps: true,
     versionKey: false,
 });
-// Indexes for better query performance
 DepartmentSchema.index({ name: 1, status: 1 });
 DepartmentSchema.index({ manager: 1 });
-// Virtual for formatted department info
 DepartmentSchema.virtual('displayInfo').get(function () {
     return `${this.name} - ${this.manager} (${this.employeeCount} employees)`;
 });
-// Pre-save middleware to capitalize first letter of name and manager
 DepartmentSchema.pre('save', function (next) {
     if (this.name) {
         this.name = this.name.charAt(0).toUpperCase() + this.name.slice(1);
@@ -90,7 +87,6 @@ DepartmentSchema.pre('save', function (next) {
     }
     next();
 });
-// Transform to frontend format
 DepartmentSchema.set('toJSON', {
     transform: function (doc, ret) {
         ret.id = ret._id;
@@ -101,4 +97,3 @@ DepartmentSchema.set('toJSON', {
 });
 const Department = mongoose_1.default.model('Department', DepartmentSchema);
 exports.default = Department;
-//# sourceMappingURL=Department.js.map

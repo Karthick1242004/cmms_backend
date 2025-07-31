@@ -11,14 +11,12 @@ const updateAssetDepartments = async () => {
         console.log('🔄 Connecting to database...');
         const db = database_1.default.getInstance();
         await db.connect();
-        // Get all departments
         const departments = await Department_1.default.find({});
         console.log(`📊 Found ${departments.length} departments`);
         if (departments.length === 0) {
             console.log('❌ No departments found. Please seed departments first.');
             process.exit(1);
         }
-        // Get all assets without department
         const assetsWithoutDepartment = await Asset_1.default.find({
             $or: [
                 { department: { $exists: false } },
@@ -31,7 +29,6 @@ const updateAssetDepartments = async () => {
             console.log('✅ All assets already have departments assigned');
             process.exit(0);
         }
-        // Assign departments to assets based on category or randomly
         const departmentMapping = {
             'Equipment': 'Maintenance',
             'Facilities': 'Facilities Management',
@@ -44,7 +41,6 @@ const updateAssetDepartments = async () => {
         let updateCount = 0;
         for (const asset of assetsWithoutDepartment) {
             let assignedDepartment = departmentMapping[asset.category];
-            // If no mapping found, assign to the first available department
             if (!assignedDepartment) {
                 const availableDept = departments.find(d => d.name === 'Maintenance') || departments[0];
                 if (availableDept) {
@@ -55,7 +51,6 @@ const updateAssetDepartments = async () => {
                     continue;
                 }
             }
-            // Find the department in our list to ensure it exists
             const dept = departments.find(d => d.name === assignedDepartment);
             if (dept) {
                 await Asset_1.default.findByIdAndUpdate(asset._id, {
@@ -66,7 +61,6 @@ const updateAssetDepartments = async () => {
             }
             else {
                 console.log(`❌ Department '${assignedDepartment}' not found for ${asset.assetName}`);
-                // Assign to first available department as fallback
                 if (departments.length > 0 && departments[0]) {
                     await Asset_1.default.findByIdAndUpdate(asset._id, {
                         department: departments[0].name
@@ -77,7 +71,6 @@ const updateAssetDepartments = async () => {
             }
         }
         console.log(`🎉 Successfully updated ${updateCount} assets with departments`);
-        // Show summary
         const summary = await Asset_1.default.aggregate([
             {
                 $group: {
@@ -104,4 +97,3 @@ if (require.main === module) {
     updateAssetDepartments();
 }
 exports.default = updateAssetDepartments;
-//# sourceMappingURL=updateAssetDepartments.js.map

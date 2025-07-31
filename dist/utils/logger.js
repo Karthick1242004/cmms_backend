@@ -36,7 +36,6 @@ class Logger {
             const logFile = this.getLogFileName(level);
             const formattedMessage = this.formatMessage(level, message, meta);
             fs_1.default.appendFileSync(logFile, formattedMessage);
-            // Also write to general log
             const generalLogFile = this.getLogFileName('general');
             fs_1.default.appendFileSync(generalLogFile, formattedMessage);
         }
@@ -62,7 +61,6 @@ class Logger {
             this.writeLog('debug', message, meta);
         }
     }
-    // Critical errors that should be logged and monitored
     critical(message, error, meta) {
         const criticalData = {
             message,
@@ -78,12 +76,9 @@ class Logger {
         };
         console.error(`💥 CRITICAL: ${message}`, criticalData);
         this.writeLog('critical', message, criticalData);
-        // In production, you could send this to external monitoring service
         if (process.env.NODE_ENV === 'production') {
-            // TODO: Send to monitoring service (e.g., Sentry, LogRocket, etc.)
         }
     }
-    // Clean old log files (older than 7 days)
     cleanOldLogs() {
         try {
             const files = fs_1.default.readdirSync(this.logDir);
@@ -104,4 +99,3 @@ class Logger {
 }
 exports.Logger = Logger;
 exports.default = Logger.getInstance();
-//# sourceMappingURL=logger.js.map

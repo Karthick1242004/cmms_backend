@@ -234,4 +234,3 @@ exports.validateUpdateStatus = [
         .trim(),
     handleValidationErrors
 ];
-//# sourceMappingURL=dailyLogActivityValidation.js.map

@@ -2,7 +2,6 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.validateDepartmentQuery = exports.validateDepartmentId = exports.validateUpdateDepartment = exports.validateCreateDepartment = void 0;
 const express_validator_1 = require("express-validator");
-// Validation for creating a new department
 exports.validateCreateDepartment = [
     (0, express_validator_1.body)('name')
         .notEmpty()
@@ -35,7 +34,6 @@ exports.validateCreateDepartment = [
         .isIn(['active', 'inactive'])
         .withMessage('Status must be either active or inactive')
 ];
-// Validation for updating a department
 exports.validateUpdateDepartment = [
     (0, express_validator_1.param)('id')
         .isMongoId()
@@ -68,13 +66,11 @@ exports.validateUpdateDepartment = [
         .isIn(['active', 'inactive'])
         .withMessage('Status must be either active or inactive')
 ];
-// Validation for getting a department by ID
 exports.validateDepartmentId = [
     (0, express_validator_1.param)('id')
         .isMongoId()
         .withMessage('Invalid department ID format')
 ];
-// Validation for query parameters
 exports.validateDepartmentQuery = [
     (0, express_validator_1.query)('page')
         .optional()
@@ -105,4 +101,3 @@ exports.validateDepartmentQuery = [
         .isIn(['asc', 'desc'])
         .withMessage('Sort order must be asc or desc')
 ];
-//# sourceMappingURL=departmentValidation.js.map

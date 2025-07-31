@@ -2,7 +2,6 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.validateRecordQuery = exports.validateScheduleQuery = exports.validateIdParam = exports.validateVerifySafetyInspectionRecord = exports.validateUpdateSafetyInspectionRecord = exports.validateCreateSafetyInspectionRecord = exports.validateUpdateSafetyInspectionSchedule = exports.validateCreateSafetyInspectionSchedule = void 0;
 const express_validator_1 = require("express-validator");
-// Schedule validation
 exports.validateCreateSafetyInspectionSchedule = [
     (0, express_validator_1.body)('assetId')
         .trim()
@@ -177,7 +176,6 @@ exports.validateUpdateSafetyInspectionSchedule = [
         .isFloat({ min: 0.1, max: 168 })
         .withMessage('Estimated duration must be between 0.1 and 168 hours'),
 ];
-// Record validation
 exports.validateCreateSafetyInspectionRecord = [
     (0, express_validator_1.body)('scheduleId')
         .trim()
@@ -280,13 +278,11 @@ exports.validateVerifySafetyInspectionRecord = [
         .isLength({ max: 100 })
         .withMessage('Admin verified by cannot exceed 100 characters'),
 ];
-// Common parameter validation
 exports.validateIdParam = [
     (0, express_validator_1.param)('id')
         .isMongoId()
         .withMessage('Invalid ID format'),
 ];
-// Query parameter validation
 exports.validateScheduleQuery = [
     (0, express_validator_1.query)('page')
         .optional()
@@ -365,4 +361,3 @@ exports.validateRecordQuery = [
         .isIn(['asc', 'desc'])
         .withMessage('Sort order must be asc or desc'),
 ];
-//# sourceMappingURL=safetyInspectionValidation.js.map

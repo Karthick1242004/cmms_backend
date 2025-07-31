@@ -224,18 +224,15 @@ const SafetyInspectionScheduleSchema = new mongoose_1.Schema({
     timestamps: true,
     versionKey: false,
 });
-// Indexes for better query performance
 SafetyInspectionScheduleSchema.index({ assetId: 1, status: 1 });
 SafetyInspectionScheduleSchema.index({ nextDueDate: 1, status: 1 });
 SafetyInspectionScheduleSchema.index({ assignedInspector: 1, status: 1 });
 SafetyInspectionScheduleSchema.index({ frequency: 1, priority: 1, riskLevel: 1 });
 SafetyInspectionScheduleSchema.index({ title: 'text', assetName: 'text', location: 'text' });
 SafetyInspectionScheduleSchema.index({ safetyStandards: 1 });
-// Virtual for checking if overdue
 SafetyInspectionScheduleSchema.virtual('isOverdue').get(function () {
     return this.status === 'active' && this.nextDueDate < new Date();
 });
-// Pre-save middleware to update status based on due date
 SafetyInspectionScheduleSchema.pre('save', function (next) {
     const now = new Date();
     if (this.status === 'active' && this.nextDueDate < now) {
@@ -243,13 +240,11 @@ SafetyInspectionScheduleSchema.pre('save', function (next) {
     }
     next();
 });
-// Transform to frontend format
 SafetyInspectionScheduleSchema.set('toJSON', {
     transform: function (doc, ret) {
         ret.id = ret._id;
         delete ret._id;
         delete ret.__v;
-        // Transform nested categories and checklist items
         if (ret.checklistCategories) {
             ret.checklistCategories = ret.checklistCategories.map((category) => {
                 category.id = category._id;
@@ -269,4 +264,3 @@ SafetyInspectionScheduleSchema.set('toJSON', {
 });
 const SafetyInspectionSchedule = mongoose_1.default.model('SafetyInspectionSchedule', SafetyInspectionScheduleSchema);
 exports.default = SafetyInspectionSchedule;
-//# sourceMappingURL=SafetyInspectionSchedule.js.map

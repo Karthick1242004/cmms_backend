@@ -1,16 +1,13 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.requireRole = exports.requireAuth = exports.extractUserContext = void 0;
-// Middleware to extract user context from headers
 const extractUserContext = (req, res, next) => {
     try {
-        // Extract user information from headers
         const userId = req.headers['x-user-id'];
         const userName = req.headers['x-user-name'];
         const userEmail = req.headers['x-user-email'];
         const userDepartment = req.headers['x-user-department'];
         const userRole = req.headers['x-user-role'];
-        // If all required headers are present, set user context
         if (userId && userName && userEmail && userDepartment && userRole) {
             req.user = {
                 id: userId,
@@ -21,7 +18,6 @@ const extractUserContext = (req, res, next) => {
             };
         }
         else {
-            // Set default user context for development/testing
             req.user = {
                 id: 'user123',
                 name: 'John Doe',
@@ -38,11 +34,10 @@ const extractUserContext = (req, res, next) => {
             success: false,
             message: 'Internal server error while processing user context',
         });
-        return; // CRITICAL: Prevent further execution
+        return;
     }
 };
 exports.extractUserContext = extractUserContext;
-// Optional: More strict authentication middleware that requires valid user context
 const requireAuth = (req, res, next) => {
     if (!req.user) {
         res.status(401).json({
@@ -54,7 +49,6 @@ const requireAuth = (req, res, next) => {
     next();
 };
 exports.requireAuth = requireAuth;
-// Role-based authorization middleware
 const requireRole = (roles) => {
     return (req, res, next) => {
         if (!req.user) {
@@ -75,4 +69,3 @@ const requireRole = (roles) => {
     };
 };
 exports.requireRole = requireRole;
-//# sourceMappingURL=authMiddleware.js.map

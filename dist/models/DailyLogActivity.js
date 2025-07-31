@@ -122,7 +122,6 @@ const DailyLogActivitySchema = new mongoose_1.Schema({
     timestamps: true,
     collection: 'dailylogactivities'
 });
-// Indexes for better query performance
 DailyLogActivitySchema.index({ date: -1 });
 DailyLogActivitySchema.index({ departmentId: 1, date: -1 });
 DailyLogActivitySchema.index({ assetId: 1, date: -1 });
@@ -130,4 +129,3 @@ DailyLogActivitySchema.index({ attendedBy: 1, date: -1 });
 DailyLogActivitySchema.index({ status: 1, priority: 1 });
 const DailyLogActivity = mongoose_1.default.model('DailyLogActivity', DailyLogActivitySchema);
 exports.default = DailyLogActivity;
-//# sourceMappingURL=DailyLogActivity.js.map

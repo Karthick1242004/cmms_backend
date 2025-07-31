@@ -7,15 +7,10 @@ exports.TicketController = void 0;
 const express_validator_1 = require("express-validator");
 const Ticket_1 = __importDefault(require("../models/Ticket"));
 class TicketController {
-    // Get all tickets with department access control and filtering
     static async getAllTickets(req, res) {
         try {
             const { page = 1, limit = 10, search, status, priority, department, reportType, assignedUser, equipmentId, isOpenTicket, sortBy = 'loggedDateTime', sortOrder = 'desc' } = req.query;
-            // Build query based on access control
             const query = {};
-            // Department-based access control
-            // For now, we'll add department filtering logic here
-            // In a real app, you'd get user department from JWT token
             const userDepartment = req.headers['x-user-department'] || department;
             if (!isOpenTicket || isOpenTicket === 'false') {
                 if (userDepartment && userDepartment !== 'all') {
@@ -29,7 +24,6 @@ class TicketController {
             else {
                 query.isOpenTicket = true;
             }
-            // Apply filters
             if (status && status !== 'all') {
                 query.status = status;
             }
@@ -54,10 +48,8 @@ class TicketController {
                     { equipmentId: { $regex: search, $options: 'i' } }
                 ];
             }
-            // Calculate pagination
             const skip = (Number(page) - 1) * Number(limit);
             const sortDirection = sortOrder === 'desc' ? -1 : 1;
-            // Execute query with pagination
             const [tickets, totalCount] = await Promise.all([
                 Ticket_1.default.find(query)
                     .sort({ [sortBy]: sortDirection })
@@ -66,7 +58,6 @@ class TicketController {
                     .lean(),
                 Ticket_1.default.countDocuments(query)
             ]);
-            // Transform for frontend compatibility
             const transformedTickets = tickets.map(ticket => ({
                 id: ticket._id.toString(),
                 ...ticket,
@@ -111,7 +102,6 @@ class TicketController {
             });
         }
     }
-    // Get ticket by ID with access control
     static async getTicketById(req, res) {
         try {
             const { id } = req.params;
@@ -124,11 +114,10 @@ class TicketController {
                 });
                 return;
             }
-            // Check access control
             const hasAccess = ticket.isOpenTicket ||
                 ticket.department === userDepartment ||
                 ticket.assignedDepartments.includes(userDepartment) ||
-                !userDepartment; // For testing without auth
+                !userDepartment;
             if (!hasAccess) {
                 res.status(403).json({
                     success: false,
@@ -155,10 +144,8 @@ class TicketController {
             });
         }
     }
-    // Create new ticket
     static async createTicket(req, res) {
         try {
-            // Check validation errors
             const errors = (0, express_validator_1.validationResult)(req);
             if (!errors.isEmpty()) {
                 res.status(400).json({
@@ -169,15 +156,12 @@ class TicketController {
                 return;
             }
             const ticketData = req.body;
-            // Add current user as logged by if not provided
             if (!ticketData.loggedBy) {
                 ticketData.loggedBy = req.headers['x-user-name'] || 'System';
             }
-            // Set default values
             if (!ticketData.loggedDateTime) {
                 ticketData.loggedDateTime = new Date();
             }
-            // Ensure at least one report type is selected
             const reportTypes = ['service', 'maintenance', 'incident', 'breakdown'];
             const hasReportType = reportTypes.some(type => ticketData.reportType?.[type]);
             if (!hasReportType) {
@@ -187,14 +171,12 @@ class TicketController {
                 });
                 return;
             }
-            // Handle department assignments
             if (ticketData.assignedDepartments && !Array.isArray(ticketData.assignedDepartments)) {
                 ticketData.assignedDepartments = [ticketData.assignedDepartments];
             }
             if (ticketData.assignedUsers && !Array.isArray(ticketData.assignedUsers)) {
                 ticketData.assignedUsers = [ticketData.assignedUsers];
             }
-            // Create new ticket
             const ticket = new Ticket_1.default(ticketData);
             const savedTicket = await ticket.save();
             res.status(201).json({
@@ -205,7 +187,6 @@ class TicketController {
         }
         catch (error) {
             console.error('Error creating ticket:', error);
-            // Handle mongoose validation errors
             if (error.name === 'ValidationError') {
                 const validationErrors = Object.values(error.errors).map((err) => {
                     if (err.kind === 'required') {
@@ -235,14 +216,12 @@ class TicketController {
             });
         }
     }
-    // Update ticket
     static async updateTicket(req, res) {
         try {
             const { id } = req.params;
             const updates = req.body;
             const userDepartment = req.headers['x-user-department'];
             const userName = req.headers['x-user-name'] || 'System';
-            // Check if ticket exists and user has access
             const existingTicket = await Ticket_1.default.findById(id);
             if (!existingTicket) {
                 res.status(404).json({
@@ -251,12 +230,11 @@ class TicketController {
                 });
                 return;
             }
-            // Check access control
             const hasAccess = existingTicket.isOpenTicket ||
                 existingTicket.department === userDepartment ||
                 existingTicket.assignedDepartments.includes(userDepartment) ||
                 existingTicket.assignedUsers.includes(userName) ||
-                !userDepartment; // For testing without auth
+                !userDepartment;
             if (!hasAccess) {
                 res.status(403).json({
                     success: false,
@@ -264,7 +242,6 @@ class TicketController {
                 });
                 return;
             }
-            // Add activity log entry for the update
             if (!updates.activityLog) {
                 updates.activityLog = [...existingTicket.activityLog];
             }
@@ -274,7 +251,6 @@ class TicketController {
                 remarks: updates.remarks || 'Ticket updated',
                 action: 'Updated'
             });
-            // Update ticket
             const updatedTicket = await Ticket_1.default.findByIdAndUpdate(id, { $set: updates }, { new: true, runValidators: true }).lean();
             if (!updatedTicket) {
                 res.status(404).json({
@@ -312,7 +288,6 @@ class TicketController {
             });
         }
     }
-    // Update ticket status
     static async updateTicketStatus(req, res) {
         try {
             const { id } = req.params;
@@ -333,16 +308,13 @@ class TicketController {
                 });
                 return;
             }
-            // Add activity log entry
             ticket.activityLog.push({
                 date: new Date(),
                 loggedBy: userName,
                 remarks: remarks || `Status changed to ${status}`,
                 action: 'Status Change'
             });
-            // Update status
             ticket.status = status;
-            // Set close date if status is Closed
             if (status === 'Closed') {
                 ticket.ticketCloseDate = new Date();
             }
@@ -362,7 +334,6 @@ class TicketController {
             });
         }
     }
-    // Assign ticket to users/departments
     static async assignTicket(req, res) {
         try {
             const { id } = req.params;
@@ -376,14 +347,12 @@ class TicketController {
                 });
                 return;
             }
-            // Update assignments
             if (assignedUsers) {
                 ticket.assignedUsers = Array.isArray(assignedUsers) ? assignedUsers : [assignedUsers];
             }
             if (assignedDepartments) {
                 ticket.assignedDepartments = Array.isArray(assignedDepartments) ? assignedDepartments : [assignedDepartments];
             }
-            // Add activity log entry
             ticket.activityLog.push({
                 date: new Date(),
                 loggedBy: userName,
@@ -406,7 +375,6 @@ class TicketController {
             });
         }
     }
-    // Add activity log entry
     static async addActivityLog(req, res) {
         try {
             const { id } = req.params;
@@ -427,7 +395,6 @@ class TicketController {
                 });
                 return;
             }
-            // Add activity log entry
             const logEntry = {
                 date: new Date(),
                 loggedBy: userName,
@@ -454,7 +421,6 @@ class TicketController {
             });
         }
     }
-    // Get tickets by department
     static async getTicketsByDepartment(req, res) {
         try {
             const { department } = req.params;
@@ -492,7 +458,6 @@ class TicketController {
             });
         }
     }
-    // Get tickets by asset
     static async getTicketsByAsset(req, res) {
         try {
             const { assetId } = req.params;
@@ -524,7 +489,6 @@ class TicketController {
             });
         }
     }
-    // Get my tickets (assigned to current user)
     static async getMyTickets(req, res) {
         try {
             const userName = req.headers['x-user-name'];
@@ -566,11 +530,9 @@ class TicketController {
             });
         }
     }
-    // Get ticket statistics
     static async getTicketStats(req, res) {
         try {
             const userDepartment = req.headers['x-user-department'];
-            // Build base query for department access
             const baseQuery = {};
             if (userDepartment && userDepartment !== 'all') {
                 baseQuery.$or = [
@@ -579,7 +541,6 @@ class TicketController {
                     { isOpenTicket: true }
                 ];
             }
-            // Get various statistics
             const [totalTickets, openTickets, inProgressTickets, resolvedTickets, closedTickets, highPriorityTickets, criticalPriorityTickets, ticketsByType, recentTickets] = await Promise.all([
                 Ticket_1.default.countDocuments(baseQuery),
                 Ticket_1.default.countDocuments({ ...baseQuery, status: 'Open' }),
@@ -639,7 +600,6 @@ class TicketController {
             });
         }
     }
-    // Delete ticket (soft delete by updating status)
     static async deleteTicket(req, res) {
         try {
             const { id } = req.params;
@@ -652,11 +612,8 @@ class TicketController {
                 });
                 return;
             }
-            // For now, we'll just close the ticket instead of deleting
-            // In a real system, you might want to implement proper soft delete
             ticket.status = 'Closed';
             ticket.ticketCloseDate = new Date();
-            // Add activity log entry
             ticket.activityLog.push({
                 date: new Date(),
                 loggedBy: userName,
@@ -680,4 +637,3 @@ class TicketController {
     }
 }
 exports.TicketController = TicketController;
-//# sourceMappingURL=ticketController.js.map

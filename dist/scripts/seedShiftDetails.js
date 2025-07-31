@@ -214,17 +214,13 @@ const sampleShiftDetails = [
 async function seedShiftDetails() {
     try {
         console.log('🌱 Starting shift details seeding process...');
-        // Connect to database
         const database = database_1.default.getInstance();
         await database.connect();
         console.log('✅ Connected to database');
-        // Clear existing shift details
         const deleteResult = await ShiftDetail_1.default.deleteMany({});
         console.log(`🗑️  Cleared ${deleteResult.deletedCount} existing shift details`);
-        // Insert sample data
         const insertedShiftDetails = await ShiftDetail_1.default.insertMany(sampleShiftDetails);
         console.log(`✅ Successfully inserted ${insertedShiftDetails.length} shift details`);
-        // Display summary
         console.log('\n📊 Seeding Summary:');
         console.log(`   Total shift details: ${insertedShiftDetails.length}`);
         const statusCounts = insertedShiftDetails.reduce((acc, shift) => {
@@ -243,7 +239,6 @@ async function seedShiftDetails() {
         Object.entries(shiftTypeCounts).forEach(([type, count]) => {
             console.log(`     ${type}: ${count}`);
         });
-        // Sample shift details for verification
         console.log('\n👥 Sample shift details created:');
         insertedShiftDetails.slice(0, 3).forEach((shift) => {
             console.log(`   ${shift.employeeName} (${shift.department}) - ${shift.shiftType} shift`);
@@ -255,7 +250,6 @@ async function seedShiftDetails() {
         throw error;
     }
 }
-// Run seeding if this file is executed directly
 if (require.main === module) {
     seedShiftDetails()
         .then(() => {
@@ -268,4 +262,3 @@ if (require.main === module) {
     });
 }
 exports.default = seedShiftDetails;
-//# sourceMappingURL=seedShiftDetails.js.map

@@ -347,22 +347,18 @@ const AssetSchema = new mongoose_1.Schema({
     timestamps: true,
     versionKey: false,
 });
-// Indexes for better query performance
 AssetSchema.index({ assetName: 1, department: 1 });
 AssetSchema.index({ category: 1, status: 1 });
 AssetSchema.index({ serialNo: 1, rfid: 1 });
 AssetSchema.index({ manufacturer: 1, condition: 1 });
 AssetSchema.index({ location: 1, isActive: 1 });
 AssetSchema.index({ department: 1, category: 1, deleted: 1 });
-// Virtual for display name with category
 AssetSchema.virtual('displayName').get(function () {
     return `${this.assetName} - ${this.category} (${this.serialNo || 'No Serial'})`;
 });
-// Virtual for status display
 AssetSchema.virtual('statusDisplay').get(function () {
     return `${this.statusText} (${this.condition || 'Unknown condition'})`;
 });
-// Pre-save middleware to normalize data
 AssetSchema.pre('save', function (next) {
     if (this.assetName) {
         this.assetName = this.assetName.trim();
@@ -375,7 +371,6 @@ AssetSchema.pre('save', function (next) {
     }
     next();
 });
-// Transform to frontend format
 AssetSchema.set('toJSON', {
     transform: function (doc, ret) {
         ret.id = ret._id;
@@ -386,4 +381,3 @@ AssetSchema.set('toJSON', {
 });
 const Asset = mongoose_1.default.model('Asset', AssetSchema);
 exports.default = Asset;
-//# sourceMappingURL=Asset.js.map

@@ -217,14 +217,12 @@ const MaintenanceRecordSchema = new mongoose_1.Schema({
     timestamps: true,
     versionKey: false,
 });
-// Indexes for better query performance
 MaintenanceRecordSchema.index({ scheduleId: 1, completedDate: -1 });
 MaintenanceRecordSchema.index({ assetId: 1, status: 1 });
 MaintenanceRecordSchema.index({ technician: 1, completedDate: -1 });
 MaintenanceRecordSchema.index({ adminVerified: 1, completedDate: -1 });
 MaintenanceRecordSchema.index({ status: 1, completedDate: -1 });
 MaintenanceRecordSchema.index({ assetName: 'text', technician: 'text', notes: 'text' });
-// Virtual for completion percentage
 MaintenanceRecordSchema.virtual('completionPercentage').get(function () {
     if (!this.partsStatus || this.partsStatus.length === 0)
         return 0;
@@ -232,20 +230,17 @@ MaintenanceRecordSchema.virtual('completionPercentage').get(function () {
     const completedItems = this.partsStatus.reduce((sum, part) => sum + part.checklistItems.filter(item => item.completed).length, 0);
     return totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0;
 });
-// Pre-save middleware to set admin verification timestamp
 MaintenanceRecordSchema.pre('save', function (next) {
     if (this.isModified('adminVerified') && this.adminVerified && !this.adminVerifiedAt) {
         this.adminVerifiedAt = new Date();
     }
     next();
 });
-// Transform to frontend format
 MaintenanceRecordSchema.set('toJSON', {
     transform: function (doc, ret) {
         ret.id = ret._id;
         delete ret._id;
         delete ret.__v;
-        // Transform nested parts and checklist items
         if (ret.partsStatus) {
             ret.partsStatus = ret.partsStatus.map((part) => {
                 part.id = part._id;
@@ -265,4 +260,3 @@ MaintenanceRecordSchema.set('toJSON', {
 });
 const MaintenanceRecord = mongoose_1.default.model('MaintenanceRecord', MaintenanceRecordSchema);
 exports.default = MaintenanceRecord;
-//# sourceMappingURL=MaintenanceRecord.js.map

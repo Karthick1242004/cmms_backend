@@ -298,19 +298,16 @@ const SafetyInspectionRecordSchema = new mongoose_1.Schema({
     timestamps: true,
     versionKey: false,
 });
-// Indexes for better query performance
 SafetyInspectionRecordSchema.index({ scheduleId: 1, completedDate: -1 });
 SafetyInspectionRecordSchema.index({ inspector: 1, status: 1 });
 SafetyInspectionRecordSchema.index({ complianceStatus: 1, adminVerified: 1 });
 SafetyInspectionRecordSchema.index({ completedDate: -1, overallComplianceScore: -1 });
 SafetyInspectionRecordSchema.index({ 'violations.status': 1, 'violations.riskLevel': 1 });
-// Transform to frontend format
 SafetyInspectionRecordSchema.set('toJSON', {
     transform: function (doc, ret) {
         ret.id = ret._id;
         delete ret._id;
         delete ret.__v;
-        // Transform nested violations
         if (ret.violations) {
             ret.violations = ret.violations.map((violation) => {
                 violation.id = violation._id;
@@ -323,4 +320,3 @@ SafetyInspectionRecordSchema.set('toJSON', {
 });
 const SafetyInspectionRecord = mongoose_1.default.model('SafetyInspectionRecord', SafetyInspectionRecordSchema);
 exports.default = SafetyInspectionRecord;
-//# sourceMappingURL=SafetyInspectionRecord.js.map

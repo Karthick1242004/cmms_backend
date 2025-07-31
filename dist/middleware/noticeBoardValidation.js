@@ -2,7 +2,6 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.validateMarkAsViewed = exports.validateGetNotices = exports.validatePublishNotice = exports.validateUpdateNotice = exports.validateCreateNotice = exports.handleValidationErrors = void 0;
 const express_validator_1 = require("express-validator");
-// Helper function to handle validation errors
 const handleValidationErrors = (req, res, next) => {
     const errors = (0, express_validator_1.validationResult)(req);
     if (!errors.isEmpty()) {
@@ -16,7 +15,6 @@ const handleValidationErrors = (req, res, next) => {
     next();
 };
 exports.handleValidationErrors = handleValidationErrors;
-// Validation for creating a notice
 exports.validateCreateNotice = [
     (0, express_validator_1.body)('title')
         .notEmpty()
@@ -92,7 +90,6 @@ exports.validateCreateNotice = [
         .isLength({ min: 1, max: 50 })
         .withMessage('Each tag must be between 1 and 50 characters')
         .trim(),
-    // Custom validation for URL based on type
     (0, express_validator_1.body)().custom((value) => {
         const { type, linkUrl } = value;
         if ((type === 'link' || type === 'file') && !linkUrl) {
@@ -102,7 +99,6 @@ exports.validateCreateNotice = [
     }),
     exports.handleValidationErrors
 ];
-// Validation for updating a notice
 exports.validateUpdateNotice = [
     (0, express_validator_1.body)('title')
         .optional()
@@ -169,14 +165,12 @@ exports.validateUpdateNotice = [
         .trim(),
     exports.handleValidationErrors
 ];
-// Validation for publishing/unpublishing notice
 exports.validatePublishNotice = [
     (0, express_validator_1.body)('isPublished')
         .isBoolean()
         .withMessage('isPublished must be a boolean value'),
     exports.handleValidationErrors
 ];
-// Validation for query parameters
 exports.validateGetNotices = [
     (0, express_validator_1.query)('page')
         .optional()
@@ -215,7 +209,7 @@ exports.validateGetNotices = [
         .optional()
         .custom((value) => {
         if (typeof value === 'string') {
-            return true; // Single tag as string
+            return true;
         }
         if (Array.isArray(value)) {
             return value.every(tag => typeof tag === 'string');
@@ -224,9 +218,6 @@ exports.validateGetNotices = [
     }),
     exports.handleValidationErrors
 ];
-// Validation for marking notice as viewed
 exports.validateMarkAsViewed = [
-    // No additional validation needed as user context comes from headers
     exports.handleValidationErrors
 ];
-//# sourceMappingURL=noticeBoardValidation.js.map

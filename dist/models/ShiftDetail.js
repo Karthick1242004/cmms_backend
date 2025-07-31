@@ -145,16 +145,13 @@ const ShiftDetailSchema = new mongoose_1.Schema({
     timestamps: true,
     versionKey: false,
 });
-// Indexes for better query performance
 ShiftDetailSchema.index({ employeeName: 1, department: 1 });
 ShiftDetailSchema.index({ shiftType: 1, status: 1 });
 ShiftDetailSchema.index({ supervisor: 1 });
 ShiftDetailSchema.index({ location: 1, department: 1 });
-// Virtual for formatted employee info
 ShiftDetailSchema.virtual('displayInfo').get(function () {
     return `${this.employeeName} - ${this.department} (${this.shiftType} shift)`;
 });
-// Pre-save middleware to capitalize names
 ShiftDetailSchema.pre('save', function (next) {
     if (this.employeeName) {
         this.employeeName = this.employeeName.charAt(0).toUpperCase() + this.employeeName.slice(1);
@@ -164,10 +161,9 @@ ShiftDetailSchema.pre('save', function (next) {
     }
     next();
 });
-// Transform to frontend format
 ShiftDetailSchema.set('toJSON', {
     transform: function (doc, ret) {
-        ret.id = ret.employeeId; // Use employeeId as id for frontend compatibility
+        ret.id = ret.employeeId;
         delete ret._id;
         delete ret.__v;
         return ret;
@@ -175,4 +171,3 @@ ShiftDetailSchema.set('toJSON', {
 });
 const ShiftDetail = mongoose_1.default.model('ShiftDetail', ShiftDetailSchema);
 exports.default = ShiftDetail;
-//# sourceMappingURL=ShiftDetail.js.map

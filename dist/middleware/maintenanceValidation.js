@@ -2,8 +2,6 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.validateRecordQuery = exports.validateScheduleQuery = exports.validateMaintenanceId = exports.validateVerifyRecord = exports.validateUpdateRecord = exports.validateCreateRecord = exports.validateUpdateSchedule = exports.validateCreateSchedule = void 0;
 const express_validator_1 = require("express-validator");
-// ========== MAINTENANCE SCHEDULE VALIDATIONS ==========
-// Validation for creating a new maintenance schedule
 exports.validateCreateSchedule = [
     (0, express_validator_1.body)('assetId')
         .notEmpty()
@@ -164,7 +162,6 @@ exports.validateCreateSchedule = [
         .trim()
         .escape(),
 ];
-// Validation for updating a maintenance schedule
 exports.validateUpdateSchedule = [
     (0, express_validator_1.param)('id')
         .isMongoId()
@@ -243,8 +240,6 @@ exports.validateUpdateSchedule = [
         .isIn(['active', 'inactive', 'completed', 'overdue'])
         .withMessage('Status must be active, inactive, completed, or overdue'),
 ];
-// ========== MAINTENANCE RECORD VALIDATIONS ==========
-// Validation for creating a new maintenance record
 exports.validateCreateRecord = [
     (0, express_validator_1.body)('scheduleId')
         .notEmpty()
@@ -337,7 +332,6 @@ exports.validateCreateRecord = [
         .trim()
         .escape(),
 ];
-// Validation for updating a maintenance record
 exports.validateUpdateRecord = [
     (0, express_validator_1.param)('id')
         .isMongoId()
@@ -394,7 +388,6 @@ exports.validateUpdateRecord = [
         .trim()
         .escape(),
 ];
-// Validation for verifying a maintenance record
 exports.validateVerifyRecord = [
     (0, express_validator_1.param)('id')
         .isMongoId()
@@ -412,14 +405,11 @@ exports.validateVerifyRecord = [
         .trim()
         .escape(),
 ];
-// ========== GENERAL VALIDATIONS ==========
-// Validation for getting by ID
 exports.validateMaintenanceId = [
     (0, express_validator_1.param)('id')
         .isMongoId()
         .withMessage('Invalid maintenance ID format')
 ];
-// Validation for schedule query parameters
 exports.validateScheduleQuery = [
     (0, express_validator_1.query)('page')
         .optional()
@@ -464,7 +454,6 @@ exports.validateScheduleQuery = [
         .isIn(['asc', 'desc'])
         .withMessage('Sort order must be asc or desc')
 ];
-// Validation for record query parameters
 exports.validateRecordQuery = [
     (0, express_validator_1.query)('page')
         .optional()
@@ -506,4 +495,3 @@ exports.validateRecordQuery = [
         .isIn(['asc', 'desc'])
         .withMessage('Sort order must be asc or desc')
 ];
-//# sourceMappingURL=maintenanceValidation.js.map

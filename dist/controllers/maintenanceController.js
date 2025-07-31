@@ -8,12 +8,9 @@ const express_validator_1 = require("express-validator");
 const MaintenanceSchedule_1 = __importDefault(require("../models/MaintenanceSchedule"));
 const MaintenanceRecord_1 = __importDefault(require("../models/MaintenanceRecord"));
 class MaintenanceController {
-    // ========== MAINTENANCE SCHEDULES ==========
-    // Get all maintenance schedules with optional filtering and pagination
     static async getAllSchedules(req, res) {
         try {
             const { page = 1, limit = 10, search, status, priority, frequency, assignedTechnician, sortBy = 'nextDueDate', sortOrder = 'asc' } = req.query;
-            // Build query
             const query = {};
             if (status && status !== 'all') {
                 if (status === 'overdue') {
@@ -44,10 +41,8 @@ class MaintenanceController {
                     { assignedTechnician: { $regex: search, $options: 'i' } }
                 ];
             }
-            // Calculate pagination
             const skip = (Number(page) - 1) * Number(limit);
             const sortDirection = sortOrder === 'desc' ? -1 : 1;
-            // Execute query with pagination
             const [schedules, totalCount] = await Promise.all([
                 MaintenanceSchedule_1.default.find(query)
                     .sort({ [sortBy]: sortDirection })
@@ -56,7 +51,6 @@ class MaintenanceController {
                     .lean(),
                 MaintenanceSchedule_1.default.countDocuments(query)
             ]);
-            // Update overdue status for active schedules
             const now = new Date();
             const transformedSchedules = schedules.map(schedule => {
                 if (schedule.status === 'active' && new Date(schedule.nextDueDate) < now) {
@@ -93,7 +87,6 @@ class MaintenanceController {
             });
         }
     }
-    // Get maintenance schedule by ID
     static async getScheduleById(req, res) {
         try {
             const { id } = req.params;
@@ -105,7 +98,6 @@ class MaintenanceController {
                 });
                 return;
             }
-            // Update overdue status if needed
             const now = new Date();
             if (schedule.status === 'active' && new Date(schedule.nextDueDate) < now) {
                 schedule.status = 'overdue';
@@ -131,7 +123,6 @@ class MaintenanceController {
             });
         }
     }
-    // Create new maintenance schedule
     static async createSchedule(req, res) {
         try {
             const errors = (0, express_validator_1.validationResult)(req);
@@ -144,7 +135,6 @@ class MaintenanceController {
                 return;
             }
             const scheduleData = req.body;
-            // Calculate next due date based on frequency
             const nextDueDate = MaintenanceController.calculateNextDueDate(scheduleData.frequency, scheduleData.startDate, scheduleData.customFrequencyDays);
             const schedule = new MaintenanceSchedule_1.default({
                 ...scheduleData,
@@ -166,7 +156,6 @@ class MaintenanceController {
             });
         }
     }
-    // Update maintenance schedule
     static async updateSchedule(req, res) {
         try {
             const errors = (0, express_validator_1.validationResult)(req);
@@ -180,7 +169,6 @@ class MaintenanceController {
             }
             const { id } = req.params;
             const updates = req.body;
-            // Recalculate next due date if frequency or start date changed
             if (updates.frequency || updates.startDate || updates.customFrequencyDays) {
                 const schedule = await MaintenanceSchedule_1.default.findById(id);
                 if (schedule) {
@@ -210,7 +198,6 @@ class MaintenanceController {
             });
         }
     }
-    // Delete maintenance schedule
     static async deleteSchedule(req, res) {
         try {
             const { id } = req.params;
@@ -240,12 +227,9 @@ class MaintenanceController {
             });
         }
     }
-    // ========== MAINTENANCE RECORDS ==========
-    // Get all maintenance records with optional filtering and pagination
     static async getAllRecords(req, res) {
         try {
             const { page = 1, limit = 10, search, status, technician, verified, sortBy = 'completedDate', sortOrder = 'desc' } = req.query;
-            // Build query
             const query = {};
             if (status && status !== 'all') {
                 if (status === 'verified') {
@@ -271,10 +255,8 @@ class MaintenanceController {
                     { notes: { $regex: search, $options: 'i' } }
                 ];
             }
-            // Calculate pagination
             const skip = (Number(page) - 1) * Number(limit);
             const sortDirection = sortOrder === 'desc' ? -1 : 1;
-            // Execute query with pagination
             const [records, totalCount] = await Promise.all([
                 MaintenanceRecord_1.default.find(query)
                     .sort({ [sortBy]: sortDirection })
@@ -313,7 +295,6 @@ class MaintenanceController {
             });
         }
     }
-    // Get maintenance record by ID
     static async getRecordById(req, res) {
         try {
             const { id } = req.params;
@@ -346,7 +327,6 @@ class MaintenanceController {
             });
         }
     }
-    // Create new maintenance record
     static async createRecord(req, res) {
         try {
             const errors = (0, express_validator_1.validationResult)(req);
@@ -361,7 +341,6 @@ class MaintenanceController {
             const recordData = req.body;
             const record = new MaintenanceRecord_1.default(recordData);
             const savedRecord = await record.save();
-            // Update the corresponding schedule's last completed date
             if (recordData.scheduleId) {
                 const schedule = await MaintenanceSchedule_1.default.findById(recordData.scheduleId);
                 if (schedule) {
@@ -385,7 +364,6 @@ class MaintenanceController {
             });
         }
     }
-    // Update maintenance record
     static async updateRecord(req, res) {
         try {
             const errors = (0, express_validator_1.validationResult)(req);
@@ -422,7 +400,6 @@ class MaintenanceController {
             });
         }
     }
-    // Verify maintenance record (admin only)
     static async verifyRecord(req, res) {
         try {
             const { id } = req.params;
@@ -457,7 +434,6 @@ class MaintenanceController {
             });
         }
     }
-    // Delete maintenance record
     static async deleteRecord(req, res) {
         try {
             const { id } = req.params;
@@ -487,8 +463,6 @@ class MaintenanceController {
             });
         }
     }
-    // ========== STATISTICS ==========
-    // Get maintenance statistics
     static async getMaintenanceStats(req, res) {
         try {
             const now = new Date();
@@ -563,7 +537,7 @@ class MaintenanceController {
                 completedThisMonth: recordStats[0]?.completedThisMonth || 0,
                 pendingVerification: recordStats[0]?.pendingVerification || 0,
                 averageCompletionTime: recordStats[0]?.averageCompletionTime || 0,
-                assetUptime: 95.5 // This would be calculated based on actual downtime data
+                assetUptime: 95.5
             };
             res.status(200).json({
                 success: true,
@@ -580,8 +554,6 @@ class MaintenanceController {
             });
         }
     }
-    // ========== HELPER METHODS ==========
-    // Calculate next due date based on frequency
     static calculateNextDueDate(frequency, fromDate, customDays) {
         const date = new Date(fromDate);
         switch (frequency) {
@@ -610,4 +582,3 @@ class MaintenanceController {
     }
 }
 exports.MaintenanceController = MaintenanceController;
-//# sourceMappingURL=maintenanceController.js.map

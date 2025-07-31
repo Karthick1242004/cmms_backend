@@ -22,36 +22,49 @@ const ticketRoutes_1 = __importDefault(require("./routes/ticketRoutes"));
 const meetingMinutesRoutes_1 = __importDefault(require("./routes/meetingMinutesRoutes"));
 const dailyLogActivityRoutes_1 = __importDefault(require("./routes/dailyLogActivityRoutes"));
 const noticeBoardRoutes_1 = __importDefault(require("./routes/noticeBoardRoutes"));
-// Load environment variables
 dotenv_1.default.config();
 const app = (0, express_1.default)();
-const PORT = process.env.PORT || 5001;
+const PORT = process.env.PORT || process.env.SERVER_PORT || 5001;
 const NODE_ENV = process.env.NODE_ENV || 'development';
-// Rate limiting
+if (process.env.RAILWAY_ENVIRONMENT) {
+    process.env.NODE_ENV = 'production';
+}
 const limiter = (0, express_rate_limit_1.default)({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // limit each IP to 100 requests per windowMs
+    windowMs: 15 * 60 * 1000,
+    max: 100,
     message: {
         success: false,
         message: 'Too many requests from this IP, please try again later.',
     },
 });
-// Security middleware
 app.use((0, helmet_1.default)({
     crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
-// CORS configuration
 const allowedOrigins = [
     'http://localhost:3000',
     'http://localhost:3001',
-    'https://cmms-dashboard.vercel.app'
+    'https://cmms-dashboard.vercel.app',
+    'https://cms-dashboard-frontend.vercel.app',
+    'https://cms-dashboard-frontend-karthicks.vercel.app'
 ];
-// Add frontend URL if provided (avoid array spread in production)
 if (process.env.FRONTEND_URL && !allowedOrigins.includes(process.env.FRONTEND_URL)) {
     allowedOrigins.push(process.env.FRONTEND_URL);
 }
 app.use((0, cors_1.default)({
-    origin: allowedOrigins,
+    origin: (origin, callback) => {
+        if (!origin)
+            return callback(null, true);
+        if (allowedOrigins.includes(origin)) {
+            return callback(null, true);
+        }
+        if (NODE_ENV === 'production' && origin.endsWith('.vercel.app')) {
+            return callback(null, true);
+        }
+        if (origin.endsWith('.railway.app')) {
+            return callback(null, true);
+        }
+        return callback(new Error('Not allowed by CORS'), false);
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: [
@@ -65,51 +78,45 @@ app.use((0, cors_1.default)({
         'x-user-role'
     ],
     exposedHeaders: ['X-Total-Count', 'X-Has-More'],
-    maxAge: 86400, // 24 hours
+    maxAge: 86400,
 }));
-// Body parsing middleware with error handling
 app.use(express_1.default.json({
-    limit: '10mb',
+    limit: '5mb',
     verify: (req, res, buf, encoding) => {
-        try {
-            JSON.parse(buf.toString());
-        }
-        catch (error) {
-            res.status(400).json({
-                success: false,
-                message: 'Invalid JSON in request body'
-            });
-            throw new Error('Invalid JSON');
+        if (buf.length > 0) {
+            try {
+                JSON.parse(buf.toString());
+            }
+            catch (error) {
+                res.status(400).json({
+                    success: false,
+                    message: 'Invalid JSON in request body'
+                });
+                throw new Error('Invalid JSON');
+            }
         }
     }
 }));
 app.use(express_1.default.urlencoded({
     extended: true,
-    limit: '10mb',
+    limit: '5mb',
+    parameterLimit: 1000,
     verify: (req, res, buf, encoding) => {
-        if (buf.length === 0) {
-            res.status(400).json({
-                success: false,
-                message: 'Empty request body'
-            });
-            throw new Error('Empty body');
+        if (buf.length === 0 && req.method !== 'GET') {
+            return;
         }
     }
 }));
-// Compression middleware
 app.use((0, compression_1.default)());
-// Logging middleware
 if (NODE_ENV === 'development') {
     app.use((0, morgan_1.default)('dev'));
 }
 else {
     app.use((0, morgan_1.default)('combined'));
 }
-// Rate limiting (only in production)
 if (NODE_ENV === 'production') {
     app.use('/api/', limiter);
 }
-// Health check endpoint
 app.get('/health', async (req, res) => {
     const database = database_1.default.getInstance();
     const isConnected = database.isConnected();
@@ -117,13 +124,11 @@ app.get('/health', async (req, res) => {
         let dbHealthy = false;
         let connectionInfo = null;
         if (isConnected) {
-            // Perform a simple database operation to verify health
             connectionInfo = await database.getConnectionInfo();
-            // Test database responsiveness with a ping
             const startTime = Date.now();
-            await database.getConnectionInfo(); // Simple query to test responsiveness
+            await database.getConnectionInfo();
             const responseTime = Date.now() - startTime;
-            dbHealthy = responseTime < 5000; // Consider healthy if responds within 5 seconds
+            dbHealthy = responseTime < 5000;
         }
         const statusCode = dbHealthy ? 200 : 503;
         res.status(statusCode).json({
@@ -156,7 +161,6 @@ app.get('/health', async (req, res) => {
         });
     }
 });
-// Database info endpoint
 app.get('/api/database/info', async (req, res) => {
     try {
         const database = database_1.default.getInstance();
@@ -191,7 +195,6 @@ app.get('/api/database/info', async (req, res) => {
         });
     }
 });
-// API routes
 app.use('/api/departments', departmentRoutes_1.default);
 app.use('/api/shift-details', shiftDetailRoutes_1.default);
 app.use('/api/maintenance', maintenanceRoutes_1.default);
@@ -202,7 +205,6 @@ app.use('/api/tickets', ticketRoutes_1.default);
 app.use('/api/meeting-minutes', meetingMinutesRoutes_1.default);
 app.use('/api/daily-log-activities', dailyLogActivityRoutes_1.default);
 app.use('/api/notice-board', noticeBoardRoutes_1.default);
-// Root endpoint
 app.get('/', (req, res) => {
     res.status(200).json({
         success: true,
@@ -226,7 +228,6 @@ app.get('/', (req, res) => {
         }
     });
 });
-// 404 handler
 app.use('*', (req, res) => {
     res.status(404).json({
         success: false,
@@ -293,10 +294,8 @@ app.use('*', (req, res) => {
         ]
     });
 });
-// Global error handler
 app.use((error, req, res, next) => {
     console.error('Global Error Handler:', error);
-    // Mongoose validation error
     if (error.name === 'ValidationError') {
         const errors = Object.values(error.errors).map((err) => ({
             field: err.path,
@@ -309,7 +308,6 @@ app.use((error, req, res, next) => {
         });
         return;
     }
-    // Mongoose cast error (invalid ObjectId)
     if (error.name === 'CastError') {
         res.status(400).json({
             success: false,
@@ -317,7 +315,6 @@ app.use((error, req, res, next) => {
         });
         return;
     }
-    // MongoDB duplicate key error
     if (error.code === 11000) {
         const field = Object.keys(error.keyValue)[0];
         res.status(409).json({
@@ -326,7 +323,6 @@ app.use((error, req, res, next) => {
         });
         return;
     }
-    // JWT errors
     if (error.name === 'JsonWebTokenError') {
         res.status(401).json({
             success: false,
@@ -341,7 +337,6 @@ app.use((error, req, res, next) => {
         });
         return;
     }
-    // MongoDB connection errors
     if (error.name === 'MongoNetworkError' || error.name === 'MongooseServerSelectionError') {
         res.status(503).json({
             success: false,
@@ -349,39 +344,33 @@ app.use((error, req, res, next) => {
         });
         return;
     }
-    // Default error
     res.status(error.status || 500).json({
         success: false,
         message: error.message || 'Internal server error',
         ...(NODE_ENV === 'development' && { stack: error.stack })
     });
 });
-// Handle uncaught exceptions
 process.on('uncaughtException', (error) => {
     logger_1.default.critical('UNCAUGHT EXCEPTION! Shutting down...', error, {
         name: error.name,
         message: error.message,
         stack: error.stack
     });
-    // Close server gracefully
     const database = database_1.default.getInstance();
     database.disconnect().finally(() => {
         process.exit(1);
     });
 });
-// Handle unhandled promise rejections
 process.on('unhandledRejection', (reason, promise) => {
     logger_1.default.critical('UNHANDLED PROMISE REJECTION! Shutting down...', reason, {
         reason,
         promise: promise.toString()
     });
-    // Close server gracefully
     const database = database_1.default.getInstance();
     database.disconnect().finally(() => {
         process.exit(1);
     });
 });
-// Graceful shutdown
 process.on('SIGTERM', async () => {
     console.log('🔄 SIGTERM received, shutting down gracefully...');
     const database = database_1.default.getInstance();
@@ -394,10 +383,9 @@ process.on('SIGINT', async () => {
     await database.disconnect();
     process.exit(0);
 });
-// Memory monitoring function
 function monitorMemory() {
     const memUsage = process.memoryUsage();
-    const maxMemory = 512 * 1024 * 1024; // 512MB limit for safety
+    const maxMemory = 512 * 1024 * 1024;
     if (memUsage.rss > maxMemory) {
         console.warn('⚠️ High memory usage detected:', {
             rss: `${Math.round(memUsage.rss / 1024 / 1024)}MB`,
@@ -405,35 +393,27 @@ function monitorMemory() {
             heapTotal: `${Math.round(memUsage.heapTotal / 1024 / 1024)}MB`,
             external: `${Math.round(memUsage.external / 1024 / 1024)}MB`
         });
-        // Force garbage collection if available
         if (global.gc) {
             global.gc();
             console.log('🧹 Forced garbage collection');
         }
     }
 }
-// Start server
 async function startServer() {
     try {
-        // Connect to database
         const database = database_1.default.getInstance();
         await database.connect();
-        // Start memory monitoring (every 30 seconds)
         setInterval(monitorMemory, 30000);
-        // Clean old logs on startup
         logger_1.default.cleanOldLogs();
-        // Log server startup
         logger_1.default.info('Server starting up', {
             port: PORT,
             environment: NODE_ENV,
             nodeVersion: process.version,
             pid: process.pid
         });
-        // Get database info after connection
         const connectionInfo = await database.getConnectionInfo();
         console.log('📊 Connected to database:', connectionInfo.name);
         console.log('📚 Available collections:', connectionInfo.collections?.map((c) => c.name).join(', ') || 'None');
-        // Start server with timeout configuration
         const server = app.listen(PORT, () => {
             console.log(`🚀 Server running on port ${PORT}`);
             console.log(`📍 Environment: ${NODE_ENV}`);
@@ -493,10 +473,9 @@ async function startServer() {
             console.log(`   GET  /api/assets/stats - Asset statistics`);
             console.log(`   POST /api/assets/bulk-import - Bulk import assets`);
         });
-        // Configure server timeouts to prevent hanging connections
-        server.timeout = 30000; // 30 seconds
-        server.keepAliveTimeout = 5000; // 5 seconds
-        server.headersTimeout = 6000; // 6 seconds (must be greater than keepAliveTimeout)
+        server.timeout = 30000;
+        server.keepAliveTimeout = 5000;
+        server.headersTimeout = 6000;
     }
     catch (error) {
         console.error('❌ Failed to start server:', error);
@@ -505,4 +484,3 @@ async function startServer() {
     }
 }
 startServer();
-//# sourceMappingURL=index.js.map

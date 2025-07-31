@@ -7,7 +7,6 @@ exports.verifySafetyInspectionRecord = exports.updateSafetyInspectionRecord = ex
 const express_validator_1 = require("express-validator");
 const SafetyInspectionSchedule_1 = __importDefault(require("../models/SafetyInspectionSchedule"));
 const SafetyInspectionRecord_1 = __importDefault(require("../models/SafetyInspectionRecord"));
-// Helper function to calculate next due date
 const calculateNextDueDate = (frequency, startDate, customDays) => {
     const date = new Date(startDate);
     switch (frequency) {
@@ -32,14 +31,12 @@ const calculateNextDueDate = (frequency, startDate, customDays) => {
     }
     return date;
 };
-// Safety Inspection Schedule Controllers
 const getSafetyInspectionSchedules = async (req, res) => {
     try {
         const { page = 1, limit = 10, search, status, priority, riskLevel, frequency, assignedInspector, safetyStandard, sortBy = 'nextDueDate', sortOrder = 'asc' } = req.query;
         const pageNum = parseInt(page);
         const limitNum = parseInt(limit);
         const skip = (pageNum - 1) * limitNum;
-        // Build filter object
         const filter = {};
         if (search) {
             filter.$or = [
@@ -61,7 +58,6 @@ const getSafetyInspectionSchedules = async (req, res) => {
             filter.assignedInspector = { $regex: assignedInspector, $options: 'i' };
         if (safetyStandard)
             filter.safetyStandards = { $in: [safetyStandard] };
-        // Build sort object
         const sort = {};
         sort[sortBy] = sortOrder === 'desc' ? -1 : 1;
         const [schedules, totalCount] = await Promise.all([
@@ -137,7 +133,6 @@ const createSafetyInspectionSchedule = async (req, res) => {
             });
         }
         const scheduleData = req.body;
-        // Calculate next due date
         scheduleData.nextDueDate = calculateNextDueDate(scheduleData.frequency, new Date(scheduleData.startDate), scheduleData.customFrequencyDays);
         const schedule = new SafetyInspectionSchedule_1.default(scheduleData);
         await schedule.save();
@@ -169,7 +164,6 @@ const updateSafetyInspectionSchedule = async (req, res) => {
         }
         const { id } = req.params;
         const updates = req.body;
-        // Recalculate next due date if frequency or start date changed
         if (updates.frequency || updates.startDate || updates.customFrequencyDays) {
             const schedule = await SafetyInspectionSchedule_1.default.findById(id);
             if (schedule) {
@@ -209,7 +203,6 @@ const deleteSafetyInspectionSchedule = async (req, res) => {
                 message: 'Safety inspection schedule not found'
             });
         }
-        // Also delete associated records
         await SafetyInspectionRecord_1.default.deleteMany({ scheduleId: id });
         return res.status(200).json({
             success: true,
@@ -260,7 +253,6 @@ const getSafetyInspectionStats = async (req, res) => {
                 { $count: 'total' }
             ])
         ]);
-        // Calculate compliance metrics
         const averageComplianceScore = recentRecords.length > 0
             ? Math.round(recentRecords.reduce((sum, record) => sum + record.overallComplianceScore, 0) / recentRecords.length)
             : 0;
@@ -298,14 +290,12 @@ const getSafetyInspectionStats = async (req, res) => {
     }
 };
 exports.getSafetyInspectionStats = getSafetyInspectionStats;
-// Safety Inspection Record Controllers
 const getSafetyInspectionRecords = async (req, res) => {
     try {
         const { page = 1, limit = 10, search, status, complianceStatus, inspector, dateFrom, dateTo, sortBy = 'completedDate', sortOrder = 'desc' } = req.query;
         const pageNum = parseInt(page);
         const limitNum = parseInt(limit);
         const skip = (pageNum - 1) * limitNum;
-        // Build filter object
         const filter = {};
         if (search) {
             filter.$or = [
@@ -327,7 +317,6 @@ const getSafetyInspectionRecords = async (req, res) => {
             if (dateTo)
                 filter.completedDate.$lte = new Date(dateTo);
         }
-        // Build sort object
         const sort = {};
         sort[sortBy] = sortOrder === 'desc' ? -1 : 1;
         const [records, totalCount] = await Promise.all([
@@ -378,7 +367,6 @@ const createSafetyInspectionRecord = async (req, res) => {
         }
         const record = new SafetyInspectionRecord_1.default(req.body);
         await record.save();
-        // Update the schedule's last completed date
         await SafetyInspectionSchedule_1.default.findByIdAndUpdate(record.scheduleId, { lastCompletedDate: record.completedDate });
         return res.status(201).json({
             success: true,
@@ -462,4 +450,3 @@ const verifySafetyInspectionRecord = async (req, res) => {
     }
 };
 exports.verifySafetyInspectionRecord = verifySafetyInspectionRecord;
-//# sourceMappingURL=safetyInspectionController.js.map

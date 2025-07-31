@@ -7,11 +7,9 @@ exports.ShiftDetailController = void 0;
 const express_validator_1 = require("express-validator");
 const ShiftDetail_1 = __importDefault(require("../models/ShiftDetail"));
 class ShiftDetailController {
-    // Get all shift details with optional filtering and pagination
     static async getAllShiftDetails(req, res) {
         try {
             const { page = 1, limit = 10, search, department, shiftType, status, location, sortBy = 'employeeName', sortOrder = 'asc' } = req.query;
-            // Build query
             const query = {};
             if (department && department !== 'all') {
                 query.department = { $regex: department, $options: 'i' };
@@ -36,10 +34,8 @@ class ShiftDetailController {
                     { location: { $regex: search, $options: 'i' } }
                 ];
             }
-            // Calculate pagination
             const skip = (Number(page) - 1) * Number(limit);
             const sortDirection = sortOrder === 'desc' ? -1 : 1;
-            // Execute query with pagination
             const [shiftDetails, totalCount] = await Promise.all([
                 ShiftDetail_1.default.find(query)
                     .sort({ [sortBy]: sortDirection })
@@ -48,7 +44,6 @@ class ShiftDetailController {
                     .lean(),
                 ShiftDetail_1.default.countDocuments(query)
             ]);
-            // Transform for frontend compatibility
             const transformedShiftDetails = shiftDetails.map(shift => ({
                 id: shift.employeeId,
                 employeeId: shift.employeeId,
@@ -93,7 +88,6 @@ class ShiftDetailController {
             });
         }
     }
-    // Get shift detail by employee ID
     static async getShiftDetailById(req, res) {
         try {
             const { id } = req.params;
@@ -106,7 +100,6 @@ class ShiftDetailController {
                 });
                 return;
             }
-            // Transform for frontend compatibility
             const transformedShiftDetail = {
                 id: shiftDetail.employeeId,
                 employeeId: shiftDetail.employeeId,
@@ -142,10 +135,8 @@ class ShiftDetailController {
             });
         }
     }
-    // Create new shift detail
     static async createShiftDetail(req, res) {
         try {
-            // Check validation errors
             const errors = (0, express_validator_1.validationResult)(req);
             if (!errors.isEmpty()) {
                 res.status(400).json({
@@ -156,7 +147,6 @@ class ShiftDetailController {
                 return;
             }
             const { employeeId, employeeName, email, phone, department, role, shiftType, shiftStartTime, shiftEndTime, workDays = [], supervisor, location, status = 'active', joinDate, avatar } = req.body;
-            // Check if employee ID already exists
             const existingShiftDetail = await ShiftDetail_1.default.findOne({ employeeId });
             if (existingShiftDetail) {
                 res.status(409).json({
@@ -165,7 +155,6 @@ class ShiftDetailController {
                 });
                 return;
             }
-            // Check if email already exists
             const existingEmail = await ShiftDetail_1.default.findOne({
                 email: email.toLowerCase()
             });
@@ -176,7 +165,6 @@ class ShiftDetailController {
                 });
                 return;
             }
-            // Create new shift detail
             const shiftDetail = new ShiftDetail_1.default({
                 employeeId,
                 employeeName,
@@ -195,7 +183,6 @@ class ShiftDetailController {
                 avatar
             });
             const savedShiftDetail = await shiftDetail.save();
-            // Transform for frontend compatibility
             const transformedShiftDetail = {
                 id: savedShiftDetail.employeeId,
                 employeeId: savedShiftDetail.employeeId,
@@ -239,10 +226,8 @@ class ShiftDetailController {
             });
         }
     }
-    // Update shift detail
     static async updateShiftDetail(req, res) {
         try {
-            // Check validation errors
             const errors = (0, express_validator_1.validationResult)(req);
             if (!errors.isEmpty()) {
                 res.status(400).json({
@@ -255,7 +240,6 @@ class ShiftDetailController {
             const { id } = req.params;
             const employeeId = Number(id);
             const updates = req.body;
-            // Check if shift detail exists
             const existingShiftDetail = await ShiftDetail_1.default.findOne({ employeeId });
             if (!existingShiftDetail) {
                 res.status(404).json({
@@ -264,7 +248,6 @@ class ShiftDetailController {
                 });
                 return;
             }
-            // If email is being updated, check for duplicates
             if (updates.email && updates.email.toLowerCase() !== existingShiftDetail.email) {
                 const duplicateEmail = await ShiftDetail_1.default.findOne({
                     email: updates.email.toLowerCase(),
@@ -278,7 +261,6 @@ class ShiftDetailController {
                     return;
                 }
             }
-            // If employeeId is being updated, check for duplicates
             if (updates.employeeId && updates.employeeId !== existingShiftDetail.employeeId) {
                 const duplicateEmployeeId = await ShiftDetail_1.default.findOne({
                     employeeId: updates.employeeId,
@@ -292,11 +274,9 @@ class ShiftDetailController {
                     return;
                 }
             }
-            // Normalize email if provided
             if (updates.email) {
                 updates.email = updates.email.toLowerCase();
             }
-            // Update shift detail
             const updatedShiftDetail = await ShiftDetail_1.default.findOneAndUpdate({ employeeId }, { $set: updates }, { new: true, runValidators: true }).lean();
             if (!updatedShiftDetail) {
                 res.status(404).json({
@@ -305,7 +285,6 @@ class ShiftDetailController {
                 });
                 return;
             }
-            // Transform for frontend compatibility
             const transformedShiftDetail = {
                 id: updatedShiftDetail.employeeId,
                 employeeId: updatedShiftDetail.employeeId,
@@ -349,7 +328,6 @@ class ShiftDetailController {
             });
         }
     }
-    // Delete shift detail
     static async deleteShiftDetail(req, res) {
         try {
             const { id } = req.params;
@@ -380,7 +358,6 @@ class ShiftDetailController {
             });
         }
     }
-    // Get shift detail statistics
     static async getShiftDetailStats(req, res) {
         try {
             const stats = await ShiftDetail_1.default.aggregate([
@@ -412,7 +389,6 @@ class ShiftDetailController {
                     }
                 }
             ]);
-            // Get department-wise statistics
             const departmentStats = await ShiftDetail_1.default.aggregate([
                 {
                     $group: {
@@ -455,4 +431,3 @@ class ShiftDetailController {
     }
 }
 exports.ShiftDetailController = ShiftDetailController;
-//# sourceMappingURL=shiftDetailController.js.map

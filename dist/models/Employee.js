@@ -95,19 +95,15 @@ const EmployeeSchema = new mongoose_1.Schema({
     timestamps: true,
     versionKey: false,
 });
-// Indexes for better query performance
 EmployeeSchema.index({ name: 1, status: 1 });
 EmployeeSchema.index({ department: 1, role: 1 });
 EmployeeSchema.index({ email: 1, status: 1 });
-// Virtual for full contact info
 EmployeeSchema.virtual('contactInfo').get(function () {
     return `${this.name} - ${this.email} (${this.phone})`;
 });
-// Virtual for display name with department
 EmployeeSchema.virtual('displayName').get(function () {
     return `${this.name} - ${this.department} (${this.role})`;
 });
-// Pre-save middleware to capitalize first letter of name and normalize data
 EmployeeSchema.pre('save', function (next) {
     if (this.name) {
         this.name = this.name.charAt(0).toUpperCase() + this.name.slice(1);
@@ -120,7 +116,6 @@ EmployeeSchema.pre('save', function (next) {
     }
     next();
 });
-// Transform to frontend format
 EmployeeSchema.set('toJSON', {
     transform: function (doc, ret) {
         ret.id = ret._id;
@@ -131,4 +126,3 @@ EmployeeSchema.set('toJSON', {
 });
 const Employee = mongoose_1.default.model('Employee', EmployeeSchema);
 exports.default = Employee;
-//# sourceMappingURL=Employee.js.map

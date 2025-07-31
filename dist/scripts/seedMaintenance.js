@@ -288,7 +288,7 @@ const maintenanceScheduleSampleData = [
 ];
 const maintenanceRecordSampleData = [
     {
-        scheduleId: '', // Will be set after creating schedules
+        scheduleId: '',
         assetId: 'PUMP-001',
         assetName: 'Primary Water Pump',
         completedDate: new Date('2024-11-15'),
@@ -367,7 +367,7 @@ const maintenanceRecordSampleData = [
         ]
     },
     {
-        scheduleId: '', // Will be set after creating schedules
+        scheduleId: '',
         assetId: 'HVAC-002',
         assetName: 'Main HVAC Unit',
         completedDate: new Date('2024-11-20'),
@@ -413,7 +413,7 @@ const maintenanceRecordSampleData = [
         ]
     },
     {
-        scheduleId: '', // Will be set after creating schedules
+        scheduleId: '',
         assetId: 'CONV-003',
         assetName: 'Production Line Conveyor',
         completedDate: new Date('2024-11-22'),
@@ -469,27 +469,21 @@ const maintenanceRecordSampleData = [
 async function seedMaintenanceData() {
     try {
         console.log('🌱 Starting maintenance data seeding...');
-        // Connect to database
         const database = database_1.default.getInstance();
         await database.connect();
-        // Clear existing data
         console.log('📝 Clearing existing maintenance data...');
         await MaintenanceRecord_1.default.deleteMany({});
         await MaintenanceSchedule_1.default.deleteMany({});
-        // Insert maintenance schedules
         console.log('📋 Inserting maintenance schedules...');
         const createdSchedules = await MaintenanceSchedule_1.default.insertMany(maintenanceScheduleSampleData);
         console.log(`✅ Created ${createdSchedules.length} maintenance schedules`);
-        // Update record sample data with actual schedule IDs
         const updatedRecordData = maintenanceRecordSampleData.map((record, index) => ({
             ...record,
             scheduleId: createdSchedules[index]?._id?.toString() || createdSchedules[0]?._id?.toString() || ''
         }));
-        // Insert maintenance records
         console.log('📊 Inserting maintenance records...');
         const createdRecords = await MaintenanceRecord_1.default.insertMany(updatedRecordData);
         console.log(`✅ Created ${createdRecords.length} maintenance records`);
-        // Display summary
         console.log('\n📈 Seeding Summary:');
         console.log(`   Maintenance Schedules: ${createdSchedules.length}`);
         console.log(`   Maintenance Records: ${createdRecords.length}`);
@@ -504,7 +498,6 @@ async function seedMaintenanceData() {
         throw error;
     }
 }
-// Run seeding if this script is executed directly
 if (require.main === module) {
     seedMaintenanceData()
         .then(() => {
@@ -517,4 +510,3 @@ if (require.main === module) {
     });
 }
 exports.default = seedMaintenanceData;
-//# sourceMappingURL=seedMaintenance.js.map

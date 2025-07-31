@@ -3,7 +3,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.validateUpdateActionItem = exports.validateUpdateMeetingMinutes = exports.validateCreateMeetingMinutes = exports.validateMeetingMinutesQuery = exports.validateMeetingMinutesId = exports.handleValidationErrors = void 0;
 const express_validator_1 = require("express-validator");
 const express_validator_2 = require("express-validator");
-// Custom validation function to handle validation results
 const handleValidationErrors = (req, res, next) => {
     const errors = (0, express_validator_2.validationResult)(req);
     if (!errors.isEmpty()) {
@@ -17,13 +16,11 @@ const handleValidationErrors = (req, res, next) => {
     next();
 };
 exports.handleValidationErrors = handleValidationErrors;
-// Validate Meeting Minutes ID parameter
 exports.validateMeetingMinutesId = [
     (0, express_validator_1.param)('id')
         .isMongoId()
         .withMessage('Invalid meeting minutes ID format'),
 ];
-// Validate query parameters for getting meeting minutes
 exports.validateMeetingMinutesQuery = [
     (0, express_validator_1.query)('page')
         .optional()
@@ -66,7 +63,6 @@ exports.validateMeetingMinutesQuery = [
         .isISO8601()
         .withMessage('Invalid date format for dateTo'),
 ];
-// Validate creating new meeting minutes
 exports.validateCreateMeetingMinutes = [
     (0, express_validator_1.body)('title')
         .isString()
@@ -160,7 +156,6 @@ exports.validateCreateMeetingMinutes = [
         .isIn(['pending', 'in-progress', 'completed'])
         .withMessage('Action item status must be pending, in-progress, or completed'),
 ];
-// Validate updating meeting minutes
 exports.validateUpdateMeetingMinutes = [
     (0, express_validator_1.body)('title')
         .optional()
@@ -248,7 +243,6 @@ exports.validateUpdateMeetingMinutes = [
         .isIn(['pending', 'in-progress', 'completed'])
         .withMessage('Action item status must be pending, in-progress, or completed'),
 ];
-// Validate updating action item status
 exports.validateUpdateActionItem = [
     (0, express_validator_1.body)('actionItemId')
         .isString()
@@ -258,4 +252,3 @@ exports.validateUpdateActionItem = [
         .isIn(['pending', 'in-progress', 'completed'])
         .withMessage('Status must be pending, in-progress, or completed'),
 ];
-//# sourceMappingURL=meetingMinutesValidation.js.map

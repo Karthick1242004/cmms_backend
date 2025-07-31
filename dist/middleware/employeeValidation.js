@@ -2,7 +2,6 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.validateEmployeeQuery = exports.validateEmployeeId = exports.validateUpdateEmployee = exports.validateCreateEmployee = void 0;
 const express_validator_1 = require("express-validator");
-// Validation for creating a new employee
 exports.validateCreateEmployee = [
     (0, express_validator_1.body)('name')
         .notEmpty()
@@ -50,7 +49,6 @@ exports.validateCreateEmployee = [
         .isLength({ max: 500 })
         .withMessage('Avatar URL cannot exceed 500 characters')
 ];
-// Validation for updating an employee
 exports.validateUpdateEmployee = [
     (0, express_validator_1.param)('id')
         .isMongoId()
@@ -96,13 +94,11 @@ exports.validateUpdateEmployee = [
         .isLength({ max: 500 })
         .withMessage('Avatar URL cannot exceed 500 characters')
 ];
-// Validation for getting an employee by ID
 exports.validateEmployeeId = [
     (0, express_validator_1.param)('id')
         .isMongoId()
         .withMessage('Invalid employee ID format')
 ];
-// Validation for query parameters
 exports.validateEmployeeQuery = [
     (0, express_validator_1.query)('page')
         .optional()
@@ -145,4 +141,3 @@ exports.validateEmployeeQuery = [
         .isIn(['asc', 'desc'])
         .withMessage('Sort order must be asc or desc')
 ];
-//# sourceMappingURL=employeeValidation.js.map

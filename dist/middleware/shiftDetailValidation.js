@@ -2,7 +2,6 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.validateShiftDetailQuery = exports.validateShiftDetailId = exports.validateUpdateShiftDetail = exports.validateCreateShiftDetail = void 0;
 const express_validator_1 = require("express-validator");
-// Validation for creating a new shift detail
 exports.validateCreateShiftDetail = [
     (0, express_validator_1.body)('employeeId')
         .isInt({ min: 1 })
@@ -85,7 +84,6 @@ exports.validateCreateShiftDetail = [
         .isURL()
         .withMessage('Avatar must be a valid URL')
 ];
-// Validation for updating a shift detail
 exports.validateUpdateShiftDetail = [
     (0, express_validator_1.param)('id')
         .isInt({ min: 1 })
@@ -173,14 +171,12 @@ exports.validateUpdateShiftDetail = [
         .isURL()
         .withMessage('Avatar must be a valid URL')
 ];
-// Validation for getting a shift detail by ID
 exports.validateShiftDetailId = [
     (0, express_validator_1.param)('id')
         .isInt({ min: 1 })
         .withMessage('Invalid employee ID format')
         .toInt()
 ];
-// Validation for query parameters
 exports.validateShiftDetailQuery = [
     (0, express_validator_1.query)('page')
         .optional()
@@ -225,4 +221,3 @@ exports.validateShiftDetailQuery = [
         .isIn(['asc', 'desc'])
         .withMessage('Sort order must be asc or desc')
 ];
-//# sourceMappingURL=shiftDetailValidation.js.map

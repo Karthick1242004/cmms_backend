@@ -7,11 +7,9 @@ exports.DepartmentController = void 0;
 const express_validator_1 = require("express-validator");
 const Department_1 = __importDefault(require("../models/Department"));
 class DepartmentController {
-    // Get all departments with optional filtering and pagination
     static async getAllDepartments(req, res) {
         try {
             const { page = 1, limit = 10, search, status, sortBy = 'name', sortOrder = 'asc' } = req.query;
-            // Build query
             const query = {};
             if (status && status !== 'all') {
                 query.status = status;
@@ -23,10 +21,8 @@ class DepartmentController {
                     { manager: { $regex: search, $options: 'i' } }
                 ];
             }
-            // Calculate pagination
             const skip = (Number(page) - 1) * Number(limit);
             const sortDirection = sortOrder === 'desc' ? -1 : 1;
-            // Execute query with pagination
             const [departments, totalCount] = await Promise.all([
                 Department_1.default.find(query)
                     .sort({ [sortBy]: sortDirection })
@@ -35,7 +31,6 @@ class DepartmentController {
                     .lean(),
                 Department_1.default.countDocuments(query)
             ]);
-            // Transform for frontend compatibility
             const transformedDepartments = departments.map(dept => ({
                 id: dept._id.toString(),
                 name: dept.name,
@@ -70,7 +65,6 @@ class DepartmentController {
             });
         }
     }
-    // Get department by ID
     static async getDepartmentById(req, res) {
         try {
             const { id } = req.params;
@@ -82,7 +76,6 @@ class DepartmentController {
                 });
                 return;
             }
-            // Transform for frontend compatibility
             const transformedDepartment = {
                 id: department._id.toString(),
                 name: department.name,
@@ -108,10 +101,8 @@ class DepartmentController {
             });
         }
     }
-    // Create new department
     static async createDepartment(req, res) {
         try {
-            // Check validation errors
             const errors = (0, express_validator_1.validationResult)(req);
             if (!errors.isEmpty()) {
                 res.status(400).json({
@@ -122,7 +113,6 @@ class DepartmentController {
                 return;
             }
             const { name, description, manager, employeeCount = 0, status = 'active' } = req.body;
-            // Check if department name already exists
             const existingDepartment = await Department_1.default.findOne({
                 name: { $regex: new RegExp(`^${name}$`, 'i') }
             });
@@ -133,7 +123,6 @@ class DepartmentController {
                 });
                 return;
             }
-            // Create new department
             const department = new Department_1.default({
                 name,
                 description,
@@ -142,7 +131,6 @@ class DepartmentController {
                 status
             });
             const savedDepartment = await department.save();
-            // Transform for frontend compatibility
             const transformedDepartment = {
                 id: savedDepartment._id.toString(),
                 name: savedDepartment.name,
@@ -175,10 +163,8 @@ class DepartmentController {
             });
         }
     }
-    // Update department
     static async updateDepartment(req, res) {
         try {
-            // Check validation errors
             const errors = (0, express_validator_1.validationResult)(req);
             if (!errors.isEmpty()) {
                 res.status(400).json({
@@ -190,7 +176,6 @@ class DepartmentController {
             }
             const { id } = req.params;
             const updates = req.body;
-            // Check if department exists
             const existingDepartment = await Department_1.default.findById(id);
             if (!existingDepartment) {
                 res.status(404).json({
@@ -199,7 +184,6 @@ class DepartmentController {
                 });
                 return;
             }
-            // If name is being updated, check for duplicates
             if (updates.name && updates.name !== existingDepartment.name) {
                 const duplicateDepartment = await Department_1.default.findOne({
                     name: { $regex: new RegExp(`^${updates.name}$`, 'i') },
@@ -213,7 +197,6 @@ class DepartmentController {
                     return;
                 }
             }
-            // Update department
             const updatedDepartment = await Department_1.default.findByIdAndUpdate(id, { $set: updates }, { new: true, runValidators: true }).lean();
             if (!updatedDepartment) {
                 res.status(404).json({
@@ -222,7 +205,6 @@ class DepartmentController {
                 });
                 return;
             }
-            // Transform for frontend compatibility
             const transformedDepartment = {
                 id: updatedDepartment._id.toString(),
                 name: updatedDepartment.name,
@@ -255,7 +237,6 @@ class DepartmentController {
             });
         }
     }
-    // Delete department
     static async deleteDepartment(req, res) {
         try {
             const { id } = req.params;
@@ -285,7 +266,6 @@ class DepartmentController {
             });
         }
     }
-    // Get department statistics
     static async getDepartmentStats(req, res) {
         try {
             const stats = await Department_1.default.aggregate([
@@ -328,4 +308,3 @@ class DepartmentController {
     }
 }
 exports.DepartmentController = DepartmentController;
-//# sourceMappingURL=departmentController.js.map

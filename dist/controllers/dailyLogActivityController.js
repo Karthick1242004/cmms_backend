@@ -8,16 +8,13 @@ const DailyLogActivity_1 = __importDefault(require("../models/DailyLogActivity")
 const Employee_1 = __importDefault(require("../models/Employee"));
 const Department_1 = __importDefault(require("../models/Department"));
 const Asset_1 = __importDefault(require("../models/Asset"));
-// Get all daily log activities with filtering and pagination
 const getAllDailyLogActivities = async (req, res) => {
     try {
         const { page = '1', limit = '10', department, status, priority, startDate, endDate, search, attendedBy, assetId } = req.query;
         const pageNum = parseInt(page);
         const limitNum = parseInt(limit);
         const skip = (pageNum - 1) * limitNum;
-        // Build filters
         const filters = {};
-        // Department-based access control
         const user = req.user;
         if (user && user.role !== 'admin') {
             filters.department = user.department;
@@ -37,7 +34,6 @@ const getAllDailyLogActivities = async (req, res) => {
         if (assetId) {
             filters.assetId = assetId;
         }
-        // Date range filter
         if (startDate || endDate) {
             filters.date = {};
             if (startDate) {
@@ -47,7 +43,6 @@ const getAllDailyLogActivities = async (req, res) => {
                 filters.date.$lte = new Date(endDate);
             }
         }
-        // Search filter
         if (search) {
             const searchRegex = { $regex: search, $options: 'i' };
             filters.$or = [
@@ -58,7 +53,6 @@ const getAllDailyLogActivities = async (req, res) => {
                 { attendedByName: searchRegex }
             ];
         }
-        // Execute query with pagination
         const [activities, totalCount] = await Promise.all([
             DailyLogActivity_1.default.find(filters)
                 .sort({ date: -1, createdAt: -1 })
@@ -92,13 +86,11 @@ const getAllDailyLogActivities = async (req, res) => {
     }
 };
 exports.getAllDailyLogActivities = getAllDailyLogActivities;
-// Get daily log activity by ID
 const getDailyLogActivityById = async (req, res) => {
     try {
         const { id } = req.params;
         const user = req.user;
         const filters = { _id: id };
-        // Department-based access control
         if (user && user.role !== 'admin') {
             filters.department = user.department;
         }
@@ -125,12 +117,10 @@ const getDailyLogActivityById = async (req, res) => {
     }
 };
 exports.getDailyLogActivityById = getDailyLogActivityById;
-// Create new daily log activity
 const createDailyLogActivity = async (req, res) => {
     try {
         const activityData = req.body;
         const user = req.user;
-        // Validate that the department exists
         const department = await Department_1.default.findOne({
             $or: [
                 { _id: activityData.departmentId },
@@ -144,7 +134,6 @@ const createDailyLogActivity = async (req, res) => {
             });
             return;
         }
-        // Validate that the asset exists and belongs to the department
         const asset = await Asset_1.default.findOne({
             _id: activityData.assetId,
             department: department.name
@@ -156,7 +145,6 @@ const createDailyLogActivity = async (req, res) => {
             });
             return;
         }
-        // Validate that the employee exists
         const employee = await Employee_1.default.findOne({ _id: activityData.attendedBy });
         if (!employee) {
             res.status(400).json({
@@ -165,7 +153,6 @@ const createDailyLogActivity = async (req, res) => {
             });
             return;
         }
-        // Validate verifiedBy if provided
         if (activityData.verifiedBy) {
             const verifier = await Employee_1.default.findOne({ _id: activityData.verifiedBy });
             if (!verifier) {
@@ -176,7 +163,6 @@ const createDailyLogActivity = async (req, res) => {
                 return;
             }
         }
-        // Department-based access control for creation
         if (user && user.role !== 'admin' && department.name !== user.department) {
             res.status(403).json({
                 success: false,
@@ -184,7 +170,6 @@ const createDailyLogActivity = async (req, res) => {
             });
             return;
         }
-        // Prepare activity data
         const newActivityData = {
             ...activityData,
             departmentId: department._id.toString(),
@@ -215,13 +200,11 @@ const createDailyLogActivity = async (req, res) => {
     }
 };
 exports.createDailyLogActivity = createDailyLogActivity;
-// Update daily log activity
 const updateDailyLogActivity = async (req, res) => {
     try {
         const { id } = req.params;
         const updates = req.body;
         const user = req.user;
-        // Find existing activity
         const existingActivity = await DailyLogActivity_1.default.findById(id);
         if (!existingActivity) {
             res.status(404).json({
@@ -230,7 +213,6 @@ const updateDailyLogActivity = async (req, res) => {
             });
             return;
         }
-        // Department-based access control
         if (user && user.role !== 'admin' && existingActivity.departmentName !== user.department) {
             res.status(403).json({
                 success: false,
@@ -238,7 +220,6 @@ const updateDailyLogActivity = async (req, res) => {
             });
             return;
         }
-        // Validate department if being updated
         if (updates.departmentId || updates.departmentName) {
             const department = await Department_1.default.findOne({
                 $or: [
@@ -256,7 +237,6 @@ const updateDailyLogActivity = async (req, res) => {
             updates.departmentId = department._id.toString();
             updates.departmentName = department.name;
         }
-        // Validate asset if being updated
         if (updates.assetId) {
             const asset = await Asset_1.default.findOne({
                 _id: updates.assetId,
@@ -271,7 +251,6 @@ const updateDailyLogActivity = async (req, res) => {
             }
             updates.assetName = asset.assetName;
         }
-        // Validate attendedBy if being updated
         if (updates.attendedBy) {
             const employee = await Employee_1.default.findOne({ _id: updates.attendedBy });
             if (!employee) {
@@ -283,7 +262,6 @@ const updateDailyLogActivity = async (req, res) => {
             }
             updates.attendedByName = employee.name;
         }
-        // Validate verifiedBy if being updated
         if (updates.verifiedBy) {
             const verifier = await Employee_1.default.findOne({ _id: updates.verifiedBy });
             if (!verifier) {
@@ -295,7 +273,6 @@ const updateDailyLogActivity = async (req, res) => {
             }
             updates.verifiedByName = verifier.name;
         }
-        // Update date if provided
         if (updates.date) {
             updates.date = new Date(updates.date);
         }
@@ -316,12 +293,10 @@ const updateDailyLogActivity = async (req, res) => {
     }
 };
 exports.updateDailyLogActivity = updateDailyLogActivity;
-// Delete daily log activity
 const deleteDailyLogActivity = async (req, res) => {
     try {
         const { id } = req.params;
         const user = req.user;
-        // Find existing activity
         const existingActivity = await DailyLogActivity_1.default.findById(id);
         if (!existingActivity) {
             res.status(404).json({
@@ -330,7 +305,6 @@ const deleteDailyLogActivity = async (req, res) => {
             });
             return;
         }
-        // Department-based access control
         if (user && user.role !== 'admin' && existingActivity.departmentName !== user.department) {
             res.status(403).json({
                 success: false,
@@ -354,13 +328,11 @@ const deleteDailyLogActivity = async (req, res) => {
     }
 };
 exports.deleteDailyLogActivity = deleteDailyLogActivity;
-// Update activity status
 const updateDailyLogActivityStatus = async (req, res) => {
     try {
         const { id } = req.params;
         const { status, verifiedBy, verifiedByName } = req.body;
         const user = req.user;
-        // Find existing activity
         const existingActivity = await DailyLogActivity_1.default.findById(id);
         if (!existingActivity) {
             res.status(404).json({
@@ -369,7 +341,6 @@ const updateDailyLogActivityStatus = async (req, res) => {
             });
             return;
         }
-        // Department-based access control
         if (user && user.role !== 'admin' && existingActivity.departmentName !== user.department) {
             res.status(403).json({
                 success: false,
@@ -378,7 +349,6 @@ const updateDailyLogActivityStatus = async (req, res) => {
             return;
         }
         const updateData = { status };
-        // If status is verified, require verifiedBy
         if (status === 'verified') {
             if (!verifiedBy) {
                 res.status(400).json({
@@ -387,7 +357,6 @@ const updateDailyLogActivityStatus = async (req, res) => {
                 });
                 return;
             }
-            // Validate verifier exists
             const verifier = await Employee_1.default.findOne({ _id: verifiedBy });
             if (!verifier) {
                 res.status(400).json({
@@ -416,12 +385,10 @@ const updateDailyLogActivityStatus = async (req, res) => {
     }
 };
 exports.updateDailyLogActivityStatus = updateDailyLogActivityStatus;
-// Get daily log activity statistics
 const getDailyLogActivityStats = async (req, res) => {
     try {
         const user = req.user;
         const { department, startDate, endDate } = req.query;
-        // Build base filter for department access control
         const baseFilter = {};
         if (user && user.role !== 'admin') {
             baseFilter.department = user.department;
@@ -429,7 +396,6 @@ const getDailyLogActivityStats = async (req, res) => {
         else if (department) {
             baseFilter.department = department;
         }
-        // Add date range filter
         if (startDate || endDate) {
             baseFilter.date = {};
             if (startDate) {
@@ -439,7 +405,6 @@ const getDailyLogActivityStats = async (req, res) => {
                 baseFilter.date.$lte = new Date(endDate);
             }
         }
-        // Execute aggregation queries
         const [totalActivities, statusStats, priorityStats, departmentStats, recentActivities, monthlyTrend] = await Promise.all([
             DailyLogActivity_1.default.countDocuments(baseFilter),
             DailyLogActivity_1.default.aggregate([
@@ -482,7 +447,6 @@ const getDailyLogActivityStats = async (req, res) => {
                 { $sort: { '_id.year': 1, '_id.month': 1 } }
             ])
         ]);
-        // Format statistics
         const stats = {
             totalActivities,
             statusBreakdown: statusStats.reduce((acc, item) => {
@@ -515,11 +479,9 @@ const getDailyLogActivityStats = async (req, res) => {
     }
 };
 exports.getDailyLogActivityStats = getDailyLogActivityStats;
-// Get assets by department (helper endpoint)
 const getAssetsByDepartment = async (req, res) => {
     try {
         const { departmentId } = req.params;
-        // Find department
         const department = await Department_1.default.findById(departmentId);
         if (!department) {
             res.status(404).json({
@@ -528,7 +490,6 @@ const getAssetsByDepartment = async (req, res) => {
             });
             return;
         }
-        // Get assets for this department
         const assets = await Asset_1.default.find({
             department: department.name
         }).select('_id assetName category condition statusText').lean();
@@ -547,4 +508,3 @@ const getAssetsByDepartment = async (req, res) => {
     }
 };
 exports.getAssetsByDepartment = getAssetsByDepartment;
-//# sourceMappingURL=dailyLogActivityController.js.map

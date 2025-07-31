@@ -96,7 +96,7 @@ const sampleSafetyInspectionSchedules = [
         description: 'Safety inspection of chemical storage area including ventilation, containment, and labeling compliance.',
         frequency: 'weekly',
         startDate: new Date('2024-01-01'),
-        nextDueDate: new Date('2023-12-25'), // Overdue for demo
+        nextDueDate: new Date('2023-12-25'),
         lastCompletedDate: new Date('2023-12-18'),
         priority: 'critical',
         riskLevel: 'critical',
@@ -209,7 +209,7 @@ const sampleSafetyInspectionSchedules = [
 ];
 const sampleSafetyInspectionRecords = [
     {
-        scheduleId: '', // Will be set after schedule creation
+        scheduleId: '',
         assetId: '1',
         assetName: 'Manufacturing Line A',
         completedDate: new Date('2024-01-15'),
@@ -226,14 +226,14 @@ const sampleSafetyInspectionRecords = [
         correctiveActionsRequired: false,
         categoryResults: [
             {
-                categoryId: '', // Will be set after schedule creation
+                categoryId: '',
                 categoryName: 'Emergency Systems',
                 weight: 30,
                 categoryComplianceScore: 100,
                 timeSpent: 90,
                 checklistItems: [
                     {
-                        itemId: '', // Will be set after schedule creation
+                        itemId: '',
                         description: 'Verify fire extinguishers are in place and charged',
                         safetyStandard: 'OSHA',
                         completed: true,
@@ -250,19 +250,15 @@ const sampleSafetyInspectionRecords = [
 async function seedSafetyInspectionData() {
     try {
         console.log('🌱 Seeding safety inspection data...');
-        // Clear existing data
         await SafetyInspectionSchedule_1.default.deleteMany({});
         await SafetyInspectionRecord_1.default.deleteMany({});
         console.log('✅ Cleared existing safety inspection data');
-        // Insert schedules
         const createdSchedules = await SafetyInspectionSchedule_1.default.insertMany(sampleSafetyInspectionSchedules);
         console.log(`✅ Created ${createdSchedules.length} safety inspection schedules`);
-        // Update records with actual schedule IDs
         if (createdSchedules.length > 0) {
             const firstSchedule = createdSchedules[0];
             if (sampleSafetyInspectionRecords[0]) {
                 sampleSafetyInspectionRecords[0].scheduleId = firstSchedule._id.toString();
-                // Set category and item IDs
                 if (firstSchedule.checklistCategories && firstSchedule.checklistCategories.length > 0) {
                     const firstCategory = firstSchedule.checklistCategories[0];
                     if (sampleSafetyInspectionRecords[0].categoryResults[0]) {
@@ -275,7 +271,6 @@ async function seedSafetyInspectionData() {
                     }
                 }
             }
-            // Insert records
             const createdRecords = await SafetyInspectionRecord_1.default.insertMany(sampleSafetyInspectionRecords);
             console.log(`✅ Created ${createdRecords.length} safety inspection records`);
         }
@@ -286,7 +281,6 @@ async function seedSafetyInspectionData() {
         throw error;
     }
 }
-// Run the seed function if this file is executed directly
 if (require.main === module) {
     mongoose_1.default.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/cmms')
         .then(async () => {
@@ -301,4 +295,3 @@ if (require.main === module) {
         process.exit(1);
     });
 }
-//# sourceMappingURL=seedSafetyInspection.js.map
