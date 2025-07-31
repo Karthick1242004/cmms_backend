@@ -15,6 +15,7 @@ import assetRoutes from './routes/assetRoutes';
 import ticketRoutes from './routes/ticketRoutes';
 import meetingMinutesRoutes from './routes/meetingMinutesRoutes';
 import dailyLogActivityRoutes from './routes/dailyLogActivityRoutes';
+import noticeBoardRoutes from './routes/noticeBoardRoutes';
 
 // Load environment variables
 dotenv.config();
@@ -153,6 +154,7 @@ app.use('/api/assets', assetRoutes);
 app.use('/api/tickets', ticketRoutes);
 app.use('/api/meeting-minutes', meetingMinutesRoutes);
 app.use('/api/daily-log-activities', dailyLogActivityRoutes);
+app.use('/api/notice-board', noticeBoardRoutes);
 
 // Root endpoint
 app.get('/', (req: Request, res: Response): void => {
@@ -173,6 +175,7 @@ app.get('/', (req: Request, res: Response): void => {
       tickets: '/api/tickets',
       meeting_minutes: '/api/meeting-minutes',
       daily_log_activities: '/api/daily-log-activities',
+      notice_board: '/api/notice-board',
       database_info: '/api/database/info'
     }
   });
@@ -234,7 +237,14 @@ app.use('*', (req: Request, res: Response): void => {
       'PUT /api/assets/:id',
       'DELETE /api/assets/:id',
       'GET /api/assets/stats',
-      'POST /api/assets/bulk-import'
+      'POST /api/assets/bulk-import',
+      'GET /api/notice-board',
+      'POST /api/notice-board',
+      'GET /api/notice-board/:id',
+      'PUT /api/notice-board/:id',
+      'DELETE /api/notice-board/:id',
+      'PATCH /api/notice-board/:id/publish',
+      'GET /api/notice-board/stats/overview'
     ]
   });
 });

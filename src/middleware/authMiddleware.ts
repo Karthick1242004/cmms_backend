@@ -7,7 +7,7 @@ export interface AuthenticatedRequest extends Request {
     name: string;
     email: string;
     department: string;
-    role: 'admin' | 'user';
+    role: 'admin' | 'manager' | 'technician';
   };
 }
 
@@ -19,7 +19,7 @@ export const extractUserContext = (req: AuthenticatedRequest, res: Response, nex
     const userName = req.headers['x-user-name'] as string;
     const userEmail = req.headers['x-user-email'] as string;
     const userDepartment = req.headers['x-user-department'] as string;
-    const userRole = req.headers['x-user-role'] as 'admin' | 'user';
+    const userRole = req.headers['x-user-role'] as 'admin' | 'manager' | 'technician';
 
     // If all required headers are present, set user context
     if (userId && userName && userEmail && userDepartment && userRole) {
@@ -64,7 +64,7 @@ export const requireAuth = (req: AuthenticatedRequest, res: Response, next: Next
 };
 
 // Role-based authorization middleware
-export const requireRole = (roles: ('admin' | 'user')[]) => {
+export const requireRole = (roles: ('admin' | 'manager' | 'technician')[]) => {
   return (req: AuthenticatedRequest, res: Response, next: NextFunction): void => {
     if (!req.user) {
       res.status(401).json({
