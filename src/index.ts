@@ -6,6 +6,7 @@ import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
 import Database from './config/database';
+import Logger from './utils/logger';
 import departmentRoutes from './routes/departmentRoutes';
 import shiftDetailRoutes from './routes/shiftDetailRoutes';
 import maintenanceRoutes from './routes/maintenanceRoutes';
@@ -43,20 +44,61 @@ app.use(helmet({
 const allowedOrigins: string[] = [
   'http://localhost:3000',
   'http://localhost:3001',
-  'https://cmms-dashboard.vercel.app',
-  ...(process.env.FRONTEND_URL ? [process.env.FRONTEND_URL] : [])
+  'https://cmms-dashboard.vercel.app'
 ];
+
+// Add frontend URL if provided (avoid array spread in production)
+if (process.env.FRONTEND_URL && !allowedOrigins.includes(process.env.FRONTEND_URL)) {
+  allowedOrigins.push(process.env.FRONTEND_URL);
+}
 
 app.use(cors({
   origin: allowedOrigins,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  allowedHeaders: [
+    'Content-Type', 
+    'Authorization', 
+    'X-Requested-With',
+    'x-user-id',
+    'x-user-name', 
+    'x-user-email',
+    'x-user-department',
+    'x-user-role'
+  ],
+  exposedHeaders: ['X-Total-Count', 'X-Has-More'],
+  maxAge: 86400, // 24 hours
 }));
 
-// Body parsing middleware
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+// Body parsing middleware with error handling
+app.use(express.json({ 
+  limit: '10mb',
+  verify: (req: any, res: any, buf: Buffer, encoding: string) => {
+    try {
+      JSON.parse(buf.toString());
+    } catch (error) {
+      res.status(400).json({
+        success: false,
+        message: 'Invalid JSON in request body'
+      });
+      throw new Error('Invalid JSON');
+    }
+  }
+}));
+
+app.use(express.urlencoded({ 
+  extended: true, 
+  limit: '10mb',
+  verify: (req: any, res: any, buf: Buffer, encoding: string) => {
+    if (buf.length === 0) {
+      res.status(400).json({
+        success: false,
+        message: 'Empty request body'
+      });
+      throw new Error('Empty body');
+    }
+  }
+}));
 
 // Compression middleware
 app.use(compression());
@@ -79,28 +121,48 @@ app.get('/health', async (req: Request, res: Response): Promise<void> => {
   const isConnected = database.isConnected();
   
   try {
-    const connectionInfo = isConnected ? await database.getConnectionInfo() : null;
+    let dbHealthy = false;
+    let connectionInfo = null;
     
-    res.status(200).json({
-      success: true,
-      message: 'Server is running',
+    if (isConnected) {
+      // Perform a simple database operation to verify health
+      connectionInfo = await database.getConnectionInfo();
+      
+      // Test database responsiveness with a ping
+      const startTime = Date.now();
+      await database.getConnectionInfo(); // Simple query to test responsiveness
+      const responseTime = Date.now() - startTime;
+      
+      dbHealthy = responseTime < 5000; // Consider healthy if responds within 5 seconds
+    }
+    
+    const statusCode = dbHealthy ? 200 : 503;
+    
+    res.status(statusCode).json({
+      success: dbHealthy,
+      message: dbHealthy ? 'Server is healthy' : 'Server is running but database is unhealthy',
       timestamp: new Date().toISOString(),
       environment: NODE_ENV,
+      uptime: process.uptime(),
+      memory: process.memoryUsage(),
       database: {
         connected: isConnected,
+        healthy: dbHealthy,
         name: connectionInfo?.name || 'Not connected',
         collections: connectionInfo?.collections?.map((c: any) => c.name) || []
       }
     });
   } catch (error) {
-    res.status(200).json({
-      success: true,
-      message: 'Server is running',
+    console.error('Health check error:', error);
+    res.status(503).json({
+      success: false,
+      message: 'Server is running but database health check failed',
       timestamp: new Date().toISOString(),
       environment: NODE_ENV,
       database: {
         connected: false,
-        error: 'Unable to fetch database info'
+        healthy: false,
+        error: 'Health check failed'
       }
     });
   }
@@ -320,6 +382,35 @@ app.use((error: any, req: Request, res: Response, next: NextFunction): void => {
   });
 });
 
+// Handle uncaught exceptions
+process.on('uncaughtException', (error: Error) => {
+  Logger.critical('UNCAUGHT EXCEPTION! Shutting down...', error, {
+    name: error.name,
+    message: error.message,
+    stack: error.stack
+  });
+  
+  // Close server gracefully
+  const database = Database.getInstance();
+  database.disconnect().finally(() => {
+    process.exit(1);
+  });
+});
+
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (reason: unknown, promise: Promise<any>) => {
+  Logger.critical('UNHANDLED PROMISE REJECTION! Shutting down...', reason, {
+    reason,
+    promise: promise.toString()
+  });
+  
+  // Close server gracefully
+  const database = Database.getInstance();
+  database.disconnect().finally(() => {
+    process.exit(1);
+  });
+});
+
 // Graceful shutdown
 process.on('SIGTERM', async () => {
   console.log('🔄 SIGTERM received, shutting down gracefully...');
@@ -335,6 +426,27 @@ process.on('SIGINT', async () => {
   process.exit(0);
 });
 
+// Memory monitoring function
+function monitorMemory() {
+  const memUsage = process.memoryUsage();
+  const maxMemory = 512 * 1024 * 1024; // 512MB limit for safety
+  
+  if (memUsage.rss > maxMemory) {
+    console.warn('⚠️ High memory usage detected:', {
+      rss: `${Math.round(memUsage.rss / 1024 / 1024)}MB`,
+      heapUsed: `${Math.round(memUsage.heapUsed / 1024 / 1024)}MB`,
+      heapTotal: `${Math.round(memUsage.heapTotal / 1024 / 1024)}MB`,
+      external: `${Math.round(memUsage.external / 1024 / 1024)}MB`
+    });
+    
+    // Force garbage collection if available
+    if (global.gc) {
+      global.gc();
+      console.log('🧹 Forced garbage collection');
+    }
+  }
+}
+
 // Start server
 async function startServer() {
   try {
@@ -342,13 +454,27 @@ async function startServer() {
     const database = Database.getInstance();
     await database.connect();
 
+    // Start memory monitoring (every 30 seconds)
+    setInterval(monitorMemory, 30000);
+
+    // Clean old logs on startup
+    Logger.cleanOldLogs();
+    
+    // Log server startup
+    Logger.info('Server starting up', {
+      port: PORT,
+      environment: NODE_ENV,
+      nodeVersion: process.version,
+      pid: process.pid
+    });
+
     // Get database info after connection
     const connectionInfo = await database.getConnectionInfo();
     console.log('📊 Connected to database:', connectionInfo.name);
     console.log('📚 Available collections:', connectionInfo.collections?.map((c: any) => c.name).join(', ') || 'None');
 
-    // Start server
-    app.listen(PORT, () => {
+    // Start server with timeout configuration
+    const server = app.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT}`);
       console.log(`📍 Environment: ${NODE_ENV}`);
       console.log(`🌐 API Base URL: http://localhost:${PORT}/api`);
@@ -407,6 +533,11 @@ async function startServer() {
       console.log(`   GET  /api/assets/stats - Asset statistics`);
       console.log(`   POST /api/assets/bulk-import - Bulk import assets`);
     });
+
+    // Configure server timeouts to prevent hanging connections
+    server.timeout = 30000; // 30 seconds
+    server.keepAliveTimeout = 5000; // 5 seconds
+    server.headersTimeout = 6000; // 6 seconds (must be greater than keepAliveTimeout)
   } catch (error) {
     console.error('❌ Failed to start server:', error);
     console.error('💡 Check your MongoDB Atlas connection string and network access');

@@ -11,6 +11,7 @@ const morgan_1 = __importDefault(require("morgan"));
 const express_rate_limit_1 = __importDefault(require("express-rate-limit"));
 const dotenv_1 = __importDefault(require("dotenv"));
 const database_1 = __importDefault(require("./config/database"));
+const logger_1 = __importDefault(require("./utils/logger"));
 const departmentRoutes_1 = __importDefault(require("./routes/departmentRoutes"));
 const shiftDetailRoutes_1 = __importDefault(require("./routes/shiftDetailRoutes"));
 const maintenanceRoutes_1 = __importDefault(require("./routes/maintenanceRoutes"));
@@ -43,18 +44,58 @@ app.use((0, helmet_1.default)({
 const allowedOrigins = [
     'http://localhost:3000',
     'http://localhost:3001',
-    'https://cmms-dashboard.vercel.app',
-    ...(process.env.FRONTEND_URL ? [process.env.FRONTEND_URL] : [])
+    'https://cmms-dashboard.vercel.app'
 ];
+// Add frontend URL if provided (avoid array spread in production)
+if (process.env.FRONTEND_URL && !allowedOrigins.includes(process.env.FRONTEND_URL)) {
+    allowedOrigins.push(process.env.FRONTEND_URL);
+}
 app.use((0, cors_1.default)({
     origin: allowedOrigins,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+    allowedHeaders: [
+        'Content-Type',
+        'Authorization',
+        'X-Requested-With',
+        'x-user-id',
+        'x-user-name',
+        'x-user-email',
+        'x-user-department',
+        'x-user-role'
+    ],
+    exposedHeaders: ['X-Total-Count', 'X-Has-More'],
+    maxAge: 86400, // 24 hours
 }));
-// Body parsing middleware
-app.use(express_1.default.json({ limit: '10mb' }));
-app.use(express_1.default.urlencoded({ extended: true, limit: '10mb' }));
+// Body parsing middleware with error handling
+app.use(express_1.default.json({
+    limit: '10mb',
+    verify: (req, res, buf, encoding) => {
+        try {
+            JSON.parse(buf.toString());
+        }
+        catch (error) {
+            res.status(400).json({
+                success: false,
+                message: 'Invalid JSON in request body'
+            });
+            throw new Error('Invalid JSON');
+        }
+    }
+}));
+app.use(express_1.default.urlencoded({
+    extended: true,
+    limit: '10mb',
+    verify: (req, res, buf, encoding) => {
+        if (buf.length === 0) {
+            res.status(400).json({
+                success: false,
+                message: 'Empty request body'
+            });
+            throw new Error('Empty body');
+        }
+    }
+}));
 // Compression middleware
 app.use((0, compression_1.default)());
 // Logging middleware
@@ -73,28 +114,44 @@ app.get('/health', async (req, res) => {
     const database = database_1.default.getInstance();
     const isConnected = database.isConnected();
     try {
-        const connectionInfo = isConnected ? await database.getConnectionInfo() : null;
-        res.status(200).json({
-            success: true,
-            message: 'Server is running',
+        let dbHealthy = false;
+        let connectionInfo = null;
+        if (isConnected) {
+            // Perform a simple database operation to verify health
+            connectionInfo = await database.getConnectionInfo();
+            // Test database responsiveness with a ping
+            const startTime = Date.now();
+            await database.getConnectionInfo(); // Simple query to test responsiveness
+            const responseTime = Date.now() - startTime;
+            dbHealthy = responseTime < 5000; // Consider healthy if responds within 5 seconds
+        }
+        const statusCode = dbHealthy ? 200 : 503;
+        res.status(statusCode).json({
+            success: dbHealthy,
+            message: dbHealthy ? 'Server is healthy' : 'Server is running but database is unhealthy',
             timestamp: new Date().toISOString(),
             environment: NODE_ENV,
+            uptime: process.uptime(),
+            memory: process.memoryUsage(),
             database: {
                 connected: isConnected,
+                healthy: dbHealthy,
                 name: connectionInfo?.name || 'Not connected',
                 collections: connectionInfo?.collections?.map((c) => c.name) || []
             }
         });
     }
     catch (error) {
-        res.status(200).json({
-            success: true,
-            message: 'Server is running',
+        console.error('Health check error:', error);
+        res.status(503).json({
+            success: false,
+            message: 'Server is running but database health check failed',
             timestamp: new Date().toISOString(),
             environment: NODE_ENV,
             database: {
                 connected: false,
-                error: 'Unable to fetch database info'
+                healthy: false,
+                error: 'Health check failed'
             }
         });
     }
@@ -225,7 +282,14 @@ app.use('*', (req, res) => {
             'PUT /api/assets/:id',
             'DELETE /api/assets/:id',
             'GET /api/assets/stats',
-            'POST /api/assets/bulk-import'
+            'POST /api/assets/bulk-import',
+            'GET /api/notice-board',
+            'POST /api/notice-board',
+            'GET /api/notice-board/:id',
+            'PUT /api/notice-board/:id',
+            'DELETE /api/notice-board/:id',
+            'PATCH /api/notice-board/:id/publish',
+            'GET /api/notice-board/stats/overview'
         ]
     });
 });
@@ -292,6 +356,31 @@ app.use((error, req, res, next) => {
         ...(NODE_ENV === 'development' && { stack: error.stack })
     });
 });
+// Handle uncaught exceptions
+process.on('uncaughtException', (error) => {
+    logger_1.default.critical('UNCAUGHT EXCEPTION! Shutting down...', error, {
+        name: error.name,
+        message: error.message,
+        stack: error.stack
+    });
+    // Close server gracefully
+    const database = database_1.default.getInstance();
+    database.disconnect().finally(() => {
+        process.exit(1);
+    });
+});
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (reason, promise) => {
+    logger_1.default.critical('UNHANDLED PROMISE REJECTION! Shutting down...', reason, {
+        reason,
+        promise: promise.toString()
+    });
+    // Close server gracefully
+    const database = database_1.default.getInstance();
+    database.disconnect().finally(() => {
+        process.exit(1);
+    });
+});
 // Graceful shutdown
 process.on('SIGTERM', async () => {
     console.log('🔄 SIGTERM received, shutting down gracefully...');
@@ -305,18 +394,47 @@ process.on('SIGINT', async () => {
     await database.disconnect();
     process.exit(0);
 });
+// Memory monitoring function
+function monitorMemory() {
+    const memUsage = process.memoryUsage();
+    const maxMemory = 512 * 1024 * 1024; // 512MB limit for safety
+    if (memUsage.rss > maxMemory) {
+        console.warn('⚠️ High memory usage detected:', {
+            rss: `${Math.round(memUsage.rss / 1024 / 1024)}MB`,
+            heapUsed: `${Math.round(memUsage.heapUsed / 1024 / 1024)}MB`,
+            heapTotal: `${Math.round(memUsage.heapTotal / 1024 / 1024)}MB`,
+            external: `${Math.round(memUsage.external / 1024 / 1024)}MB`
+        });
+        // Force garbage collection if available
+        if (global.gc) {
+            global.gc();
+            console.log('🧹 Forced garbage collection');
+        }
+    }
+}
 // Start server
 async function startServer() {
     try {
         // Connect to database
         const database = database_1.default.getInstance();
         await database.connect();
+        // Start memory monitoring (every 30 seconds)
+        setInterval(monitorMemory, 30000);
+        // Clean old logs on startup
+        logger_1.default.cleanOldLogs();
+        // Log server startup
+        logger_1.default.info('Server starting up', {
+            port: PORT,
+            environment: NODE_ENV,
+            nodeVersion: process.version,
+            pid: process.pid
+        });
         // Get database info after connection
         const connectionInfo = await database.getConnectionInfo();
         console.log('📊 Connected to database:', connectionInfo.name);
         console.log('📚 Available collections:', connectionInfo.collections?.map((c) => c.name).join(', ') || 'None');
-        // Start server
-        app.listen(PORT, () => {
+        // Start server with timeout configuration
+        const server = app.listen(PORT, () => {
             console.log(`🚀 Server running on port ${PORT}`);
             console.log(`📍 Environment: ${NODE_ENV}`);
             console.log(`🌐 API Base URL: http://localhost:${PORT}/api`);
@@ -375,6 +493,10 @@ async function startServer() {
             console.log(`   GET  /api/assets/stats - Asset statistics`);
             console.log(`   POST /api/assets/bulk-import - Bulk import assets`);
         });
+        // Configure server timeouts to prevent hanging connections
+        server.timeout = 30000; // 30 seconds
+        server.keepAliveTimeout = 5000; // 5 seconds
+        server.headersTimeout = 6000; // 6 seconds (must be greater than keepAliveTimeout)
     }
     catch (error) {
         console.error('❌ Failed to start server:', error);

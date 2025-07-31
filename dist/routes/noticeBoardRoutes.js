@@ -8,8 +8,8 @@ const noticeBoardController_1 = require("../controllers/noticeBoardController");
 const noticeBoardValidation_1 = require("../middleware/noticeBoardValidation");
 const authMiddleware_1 = require("../middleware/authMiddleware");
 const router = express_1.default.Router();
-// Apply authentication middleware to all routes
-router.use(authMiddleware_1.requireAuth);
+// Apply user context middleware to all routes
+router.use(authMiddleware_1.extractUserContext);
 // Public routes (all authenticated users can access)
 router.get('/', noticeBoardValidation_1.validateGetNotices, noticeBoardController_1.getAllNoticeBoard);
 router.get('/:id', noticeBoardController_1.getNoticeBoardById);

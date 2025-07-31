@@ -38,6 +38,7 @@ const extractUserContext = (req, res, next) => {
             success: false,
             message: 'Internal server error while processing user context',
         });
+        return; // CRITICAL: Prevent further execution
     }
 };
 exports.extractUserContext = extractUserContext;

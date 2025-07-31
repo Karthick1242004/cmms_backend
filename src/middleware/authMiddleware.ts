@@ -48,6 +48,7 @@ export const extractUserContext = (req: AuthenticatedRequest, res: Response, nex
       success: false,
       message: 'Internal server error while processing user context',
     });
+    return; // CRITICAL: Prevent further execution
   }
 };
 

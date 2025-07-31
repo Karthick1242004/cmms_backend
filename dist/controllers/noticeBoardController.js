@@ -10,16 +10,16 @@ const Department_1 = __importDefault(require("../models/Department"));
 const getAllNoticeBoard = async (req, res) => {
     try {
         const { page = 1, limit = 10, priority, type, targetAudience, isActive, isPublished, search, tags } = req.query;
-        const userId = req.headers['x-user-id'];
-        const userDepartment = req.headers['x-user-department'];
-        const userRole = req.headers['x-user-role'];
-        if (!userId || !userDepartment || !userRole) {
-            res.status(400).json({
+        if (!req.user) {
+            res.status(401).json({
                 success: false,
-                message: 'User context is required'
+                message: 'Authentication required'
             });
             return;
         }
+        const userId = req.user.id;
+        const userDepartment = req.user.department;
+        const userRole = req.user.role;
         // Build query for visible notices
         const query = {
             isActive: true,
@@ -121,17 +121,14 @@ exports.getAllNoticeBoard = getAllNoticeBoard;
 const getNoticeBoardById = async (req, res) => {
     try {
         const { id } = req.params;
-        const userId = req.headers['x-user-id'];
-        const userName = req.headers['x-user-name'];
-        const userDepartment = req.headers['x-user-department'];
-        const userRole = req.headers['x-user-role'];
-        if (!userId || !userDepartment || !userRole) {
-            res.status(400).json({
+        if (!req.user) {
+            res.status(401).json({
                 success: false,
-                message: 'User context is required'
+                message: 'Authentication required'
             });
             return;
         }
+        const { id: userId, name: userName, department: userDepartment, role: userRole } = req.user;
         const notice = await NoticeBoard_1.default.findById(id);
         if (!notice) {
             res.status(404).json({
@@ -172,16 +169,14 @@ exports.getNoticeBoardById = getNoticeBoardById;
 // Create new notice board entry (admin only)
 const createNoticeBoard = async (req, res) => {
     try {
-        const userId = req.headers['x-user-id'];
-        const userName = req.headers['x-user-name'];
-        const userRole = req.headers['x-user-role'];
-        if (!userId || !userName || !userRole) {
-            res.status(400).json({
+        if (!req.user) {
+            res.status(401).json({
                 success: false,
-                message: 'User context is required'
+                message: 'Authentication required'
             });
             return;
         }
+        const { id: userId, name: userName, role: userRole } = req.user;
         // Check if user is admin
         if (userRole !== 'admin') {
             res.status(403).json({
@@ -246,16 +241,14 @@ exports.createNoticeBoard = createNoticeBoard;
 const updateNoticeBoard = async (req, res) => {
     try {
         const { id } = req.params;
-        const userId = req.headers['x-user-id'];
-        const userName = req.headers['x-user-name'];
-        const userRole = req.headers['x-user-role'];
-        if (!userId || !userName || !userRole) {
-            res.status(400).json({
+        if (!req.user) {
+            res.status(401).json({
                 success: false,
-                message: 'User context is required'
+                message: 'Authentication required'
             });
             return;
         }
+        const { id: userId, name: userName, role: userRole } = req.user;
         // Check if user is admin
         if (userRole !== 'admin') {
             res.status(403).json({
@@ -347,14 +340,14 @@ exports.updateNoticeBoard = updateNoticeBoard;
 const deleteNoticeBoard = async (req, res) => {
     try {
         const { id } = req.params;
-        const userRole = req.headers['x-user-role'];
-        if (!userRole) {
-            res.status(400).json({
+        if (!req.user) {
+            res.status(401).json({
                 success: false,
-                message: 'User context is required'
+                message: 'Authentication required'
             });
             return;
         }
+        const { role: userRole } = req.user;
         // Check if user is admin
         if (userRole !== 'admin') {
             res.status(403).json({
@@ -392,16 +385,14 @@ const togglePublishNotice = async (req, res) => {
     try {
         const { id } = req.params;
         const { isPublished } = req.body;
-        const userId = req.headers['x-user-id'];
-        const userName = req.headers['x-user-name'];
-        const userRole = req.headers['x-user-role'];
-        if (!userId || !userName || !userRole) {
-            res.status(400).json({
+        if (!req.user) {
+            res.status(401).json({
                 success: false,
-                message: 'User context is required'
+                message: 'Authentication required'
             });
             return;
         }
+        const { id: userId, name: userName, role: userRole } = req.user;
         // Check if user is admin
         if (userRole !== 'admin') {
             res.status(403).json({
@@ -444,14 +435,14 @@ exports.togglePublishNotice = togglePublishNotice;
 // Get notice board statistics (admin only)
 const getNoticeBoardStats = async (req, res) => {
     try {
-        const userRole = req.headers['x-user-role'];
-        if (!userRole) {
-            res.status(400).json({
+        if (!req.user) {
+            res.status(401).json({
                 success: false,
-                message: 'User context is required'
+                message: 'Authentication required'
             });
             return;
         }
+        const { role: userRole } = req.user;
         // Check if user is admin
         if (userRole !== 'admin') {
             res.status(403).json({

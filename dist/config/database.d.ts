@@ -3,6 +3,7 @@ declare class Database {
     private constructor();
     static getInstance(): Database;
     connect(): Promise<void>;
+    private setupConnectionListeners;
     disconnect(): Promise<void>;
     isConnected(): boolean;
     getConnectionInfo(): Promise<any>;
