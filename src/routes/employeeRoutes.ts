@@ -22,6 +22,27 @@ router.get(
   EmployeeController.getEmployeeStats
 );
 
+// GET /api/employees/:id/details - Get detailed employee information with work history and analytics
+router.get(
+  '/:id/details',
+  validateEmployeeId,
+  EmployeeController.getEmployeeDetails
+);
+
+// GET /api/employees/:id/analytics - Get employee analytics and performance metrics
+router.get(
+  '/:id/analytics',
+  validateEmployeeId,
+  EmployeeController.getEmployeeAnalytics
+);
+
+// GET /api/employees/:id/work-history - Get employee work history
+router.get(
+  '/:id/work-history',
+  validateEmployeeId,
+  EmployeeController.getEmployeeWorkHistory
+);
+
 // GET /api/employees/:id - Get employee by ID
 router.get(
   '/:id',

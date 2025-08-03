@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { validationResult } from 'express-validator';
-import Employee, { IEmployee } from '../models/Employee';
+import Employee, { IEmployee, IWorkHistoryEntry, IAssetAssignment, IPerformanceMetrics } from '../models/Employee';
+import mongoose from 'mongoose';
 
 export class EmployeeController {
   // Get all employees with optional filtering and pagination
@@ -351,6 +352,571 @@ export class EmployeeController {
         error: process.env.NODE_ENV === 'development' ? error : undefined
       });
     }
+  }
+
+  // Get detailed employee information with work history and analytics
+  static async getEmployeeDetails(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+
+      if (!id) {
+        res.status(400).json({
+          success: false,
+          message: 'Employee ID is required'
+        });
+        return;
+      }
+
+      const employee = await Employee.findById(id).lean();
+
+      if (!employee) {
+        res.status(404).json({
+          success: false,
+          message: 'Employee not found'
+        });
+        return;
+      }
+
+      // Get work history from other collections (tickets, maintenance, etc.)
+      const workHistory = await EmployeeController.aggregateWorkHistory(id);
+      
+      // Get current asset assignments
+      const currentAssets = await EmployeeController.getCurrentAssetAssignments(id);
+      
+      // Calculate performance metrics
+      const performanceMetrics = await EmployeeController.calculatePerformanceMetrics(id, workHistory);
+
+      // Transform for frontend compatibility
+      const transformedEmployee = {
+        id: employee._id.toString(),
+        name: employee.name,
+        email: employee.email,
+        phone: employee.phone,
+        department: employee.department,
+        role: employee.role,
+        status: employee.status,
+        avatar: employee.avatar,
+        employeeId: employee.employeeId,
+        joinDate: employee.joinDate,
+        supervisor: employee.supervisor,
+        skills: employee.skills || [],
+        certifications: employee.certifications || [],
+        workShift: employee.workShift,
+        emergencyContact: employee.emergencyContact,
+        workHistory: workHistory,
+        assetAssignments: employee.assetAssignments || [],
+        currentAssignments: currentAssets,
+        performanceMetrics: performanceMetrics,
+        totalWorkHours: employee.totalWorkHours || 0,
+        productivityScore: employee.productivityScore || 0,
+        reliabilityScore: employee.reliabilityScore || 0,
+        createdAt: employee.createdAt,
+        updatedAt: employee.updatedAt
+      };
+
+      res.status(200).json({
+        success: true,
+        data: transformedEmployee,
+        message: 'Employee details retrieved successfully'
+      });
+    } catch (error: any) {
+      console.error('Error fetching employee details:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error while fetching employee details',
+        error: process.env.NODE_ENV === 'development' ? error : undefined
+      });
+    }
+  }
+
+  // Get employee analytics and performance metrics
+  static async getEmployeeAnalytics(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+
+      if (!id) {
+        res.status(400).json({
+          success: false,
+          message: 'Employee ID is required'
+        });
+        return;
+      }
+
+      const employee = await Employee.findById(id);
+
+      if (!employee) {
+        res.status(404).json({
+          success: false,
+          message: 'Employee not found'
+        });
+        return;
+      }
+
+      // Get comprehensive analytics data
+      const analytics = await EmployeeController.generateEmployeeAnalytics(id);
+
+      res.status(200).json({
+        success: true,
+        data: analytics,
+        message: 'Employee analytics retrieved successfully'
+      });
+    } catch (error: any) {
+      console.error('Error fetching employee analytics:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error while fetching employee analytics',
+        error: process.env.NODE_ENV === 'development' ? error : undefined
+      });
+    }
+  }
+
+  // Get employee work history
+  static async getEmployeeWorkHistory(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      const { page = 1, limit = 20, type, startDate, endDate } = req.query;
+
+      if (!id) {
+        res.status(400).json({
+          success: false,
+          message: 'Employee ID is required'
+        });
+        return;
+      }
+
+      const employee = await Employee.findById(id);
+
+      if (!employee) {
+        res.status(404).json({
+          success: false,
+          message: 'Employee not found'
+        });
+        return;
+      }
+
+      // Get filtered work history
+      const workHistory = await EmployeeController.getFilteredWorkHistory(
+        id, 
+        {
+          page: Number(page),
+          limit: Number(limit),
+          type: type as string,
+          startDate: startDate as string,
+          endDate: endDate as string
+        }
+      );
+
+      res.status(200).json({
+        success: true,
+        data: workHistory,
+        message: 'Employee work history retrieved successfully'
+      });
+    } catch (error: any) {
+      console.error('Error fetching employee work history:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error while fetching employee work history',
+        error: process.env.NODE_ENV === 'development' ? error : undefined
+      });
+    }
+  }
+
+  // Helper method to aggregate work history from multiple collections
+  static async aggregateWorkHistory(employeeId: string): Promise<IWorkHistoryEntry[]> {
+    try {
+      const workHistory: IWorkHistoryEntry[] = [];
+
+      // Get tickets where employee is involved
+      const ticketsCollection = mongoose.connection.db?.collection('tickets');
+      if (ticketsCollection) {
+        const tickets = await ticketsCollection.find({
+          $or: [
+            { loggedBy: employeeId },
+            { assignedUsers: employeeId },
+            { inCharge: employeeId }
+          ]
+        }).sort({ loggedDateTime: -1 }).limit(100).toArray();
+
+        tickets.forEach(ticket => {
+          workHistory.push({
+            date: new Date(ticket.loggedDateTime),
+            type: 'ticket',
+            referenceId: ticket._id.toString(),
+            title: ticket.subject,
+            description: ticket.description,
+            status: ticket.status,
+            assetId: ticket.equipmentId,
+            assetName: ticket.equipmentName || 'N/A',
+            priority: ticket.priority
+          });
+        });
+      }
+
+      // Get maintenance records
+      const maintenanceCollection = mongoose.connection.db?.collection('maintenancerecords');
+      if (maintenanceCollection) {
+        const maintenanceRecords = await maintenanceCollection.find({
+          $or: [
+            { technicianId: employeeId },
+            { technician: employeeId },
+            { adminVerifiedBy: employeeId }
+          ]
+        }).sort({ completedDate: -1 }).limit(100).toArray();
+
+        maintenanceRecords.forEach(record => {
+          workHistory.push({
+            date: new Date(record.completedDate),
+            type: 'maintenance',
+            referenceId: record._id.toString(),
+            title: `Maintenance: ${record.assetName}`,
+            description: record.notes,
+            status: record.status,
+            assetId: record.assetId,
+            assetName: record.assetName,
+            duration: record.actualDuration
+          });
+        });
+      }
+
+      // Get daily log activities
+      const dailyLogCollection = mongoose.connection.db?.collection('dailylogactivities');
+      if (dailyLogCollection) {
+        const dailyLogs = await dailyLogCollection.find({
+          $or: [
+            { attendedBy: employeeId },
+            { verifiedBy: employeeId },
+            { createdBy: employeeId }
+          ]
+        }).sort({ date: -1 }).limit(100).toArray();
+
+        dailyLogs.forEach(log => {
+          workHistory.push({
+            date: new Date(log.date),
+            type: 'daily-log',
+            referenceId: log._id.toString(),
+            title: log.natureOfProblem,
+            description: log.commentsOrSolution,
+            status: log.status,
+            assetId: log.assetId,
+            assetName: log.assetName,
+            priority: log.priority
+          });
+        });
+      }
+
+      // Get safety inspection records
+      const safetyInspectionCollection = mongoose.connection.db?.collection('safetyinspectionrecords');
+      if (safetyInspectionCollection) {
+        const safetyRecords = await safetyInspectionCollection.find({
+          $or: [
+            { inspectorId: employeeId },
+            { inspector: employeeId },
+            { supervisorId: employeeId }
+          ]
+        }).sort({ inspectionDate: -1 }).limit(100).toArray();
+
+        safetyRecords.forEach(record => {
+          workHistory.push({
+            date: new Date(record.inspectionDate),
+            type: 'safety-inspection',
+            referenceId: record._id.toString(),
+            title: `Safety Inspection: ${record.assetName || record.area}`,
+            description: record.notes,
+            status: record.status,
+            assetId: record.assetId,
+            assetName: record.assetName,
+            duration: record.duration
+          });
+        });
+      }
+
+      // Sort by date (newest first)
+      workHistory.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+      return workHistory.slice(0, 50); // Return latest 50 entries
+    } catch (error) {
+      console.error('Error aggregating work history:', error);
+      return [];
+    }
+  }
+
+  // Helper method to get current asset assignments
+  static async getCurrentAssetAssignments(employeeId: string): Promise<string[]> {
+    try {
+      const assignedAssets: string[] = [];
+
+      // Get assets from various collections where employee is assigned
+      const assetsCollection = mongoose.connection.db?.collection('assets');
+      if (assetsCollection) {
+        const assets = await assetsCollection.find({
+          $or: [
+            { 'personnel.employeeId': employeeId },
+            { assignedTo: employeeId },
+            { responsiblePerson: employeeId }
+          ]
+        }).toArray();
+
+        assets.forEach(asset => {
+          assignedAssets.push(asset._id.toString());
+        });
+      }
+
+      return assignedAssets;
+    } catch (error) {
+      console.error('Error getting current asset assignments:', error);
+      return [];
+    }
+  }
+
+  // Helper method to calculate performance metrics
+  static async calculatePerformanceMetrics(employeeId: string, workHistory: IWorkHistoryEntry[]): Promise<IPerformanceMetrics> {
+    try {
+      const tickets = workHistory.filter(item => item.type === 'ticket');
+      const maintenance = workHistory.filter(item => item.type === 'maintenance');
+      const dailyLogs = workHistory.filter(item => item.type === 'daily-log');
+      const safetyInspections = workHistory.filter(item => item.type === 'safety-inspection');
+
+      const totalTasksCompleted = workHistory.filter(item => 
+        ['completed', 'resolved', 'closed'].includes(item.status.toLowerCase())
+      ).length;
+
+      const totalDuration = workHistory
+        .filter(item => item.duration)
+        .reduce((sum, item) => sum + (item.duration || 0), 0);
+
+      const averageCompletionTime = totalTasksCompleted > 0 ? totalDuration / totalTasksCompleted : 0;
+
+      const lastActivityDate = workHistory.length > 0 && workHistory[0] ? new Date(workHistory[0].date) : undefined;
+
+      // Calculate efficiency based on completion rate
+      const efficiency = workHistory.length > 0 ? (totalTasksCompleted / workHistory.length) * 100 : 0;
+
+      return {
+        totalTasksCompleted,
+        averageCompletionTime,
+        ticketsResolved: tickets.filter(t => ['resolved', 'closed'].includes(t.status.toLowerCase())).length,
+        maintenanceCompleted: maintenance.filter(m => m.status.toLowerCase() === 'completed').length,
+        safetyInspectionsCompleted: safetyInspections.filter(s => s.status.toLowerCase() === 'completed').length,
+        dailyLogEntries: dailyLogs.length,
+        lastActivityDate,
+        efficiency: Math.round(efficiency),
+        rating: Math.min(5, Math.max(1, Math.round((efficiency / 20) + 1))) // Convert efficiency to 1-5 rating
+      };
+    } catch (error) {
+      console.error('Error calculating performance metrics:', error);
+      return {
+        totalTasksCompleted: 0,
+        averageCompletionTime: 0,
+        ticketsResolved: 0,
+        maintenanceCompleted: 0,
+        safetyInspectionsCompleted: 0,
+        dailyLogEntries: 0,
+        efficiency: 0,
+        rating: 3
+      };
+    }
+  }
+
+  // Helper method to generate comprehensive analytics
+  static async generateEmployeeAnalytics(employeeId: string): Promise<any> {
+    try {
+      const workHistory = await EmployeeController.aggregateWorkHistory(employeeId);
+      const performanceMetrics = await EmployeeController.calculatePerformanceMetrics(employeeId, workHistory);
+
+      // Generate analytics data for charts
+      const monthlyActivity = EmployeeController.getMonthlyActivityData(workHistory);
+      const taskDistribution = EmployeeController.getTaskDistributionData(workHistory);
+      const performanceTrends = EmployeeController.getPerformanceTrends(workHistory);
+      const assetWorkload = EmployeeController.getAssetWorkloadData(workHistory);
+
+      return {
+        performanceMetrics,
+        monthlyActivity,
+        taskDistribution,
+        performanceTrends,
+        assetWorkload,
+        summary: {
+          totalActivities: workHistory.length,
+          averageTasksPerMonth: monthlyActivity.reduce((sum, month) => sum + month.count, 0) / 12,
+          mostActiveMonth: monthlyActivity.reduce((max, month) => month.count > max.count ? month : max, { count: 0, month: '' }),
+          primaryTaskType: taskDistribution.reduce((max, task) => task.count > max.count ? task : max, { count: 0, type: '' })
+        }
+      };
+    } catch (error) {
+      console.error('Error generating employee analytics:', error);
+      return {};
+    }
+  }
+
+  // Helper method to get filtered work history
+  static async getFilteredWorkHistory(employeeId: string, filters: any): Promise<any> {
+    try {
+      const workHistory = await EmployeeController.aggregateWorkHistory(employeeId);
+
+      let filteredHistory = workHistory;
+
+      // Apply filters
+      if (filters.type) {
+        filteredHistory = filteredHistory.filter(item => item.type === filters.type);
+      }
+
+      if (filters.startDate) {
+        const startDate = new Date(filters.startDate);
+        filteredHistory = filteredHistory.filter(item => new Date(item.date) >= startDate);
+      }
+
+      if (filters.endDate) {
+        const endDate = new Date(filters.endDate);
+        filteredHistory = filteredHistory.filter(item => new Date(item.date) <= endDate);
+      }
+
+      // Apply pagination
+      const startIndex = (filters.page - 1) * filters.limit;
+      const endIndex = startIndex + filters.limit;
+      const paginatedHistory = filteredHistory.slice(startIndex, endIndex);
+
+      return {
+        items: paginatedHistory,
+        pagination: {
+          currentPage: filters.page,
+          totalPages: Math.ceil(filteredHistory.length / filters.limit),
+          totalCount: filteredHistory.length,
+          hasNext: endIndex < filteredHistory.length,
+          hasPrevious: filters.page > 1
+        }
+      };
+    } catch (error) {
+      console.error('Error getting filtered work history:', error);
+      return { items: [], pagination: {} };
+    }
+  }
+
+  // Helper method to get monthly activity data for charts
+  static getMonthlyActivityData(workHistory: IWorkHistoryEntry[]): any[] {
+    const monthlyData = new Map();
+    const currentDate = new Date();
+    
+    // Initialize last 12 months
+    for (let i = 11; i >= 0; i--) {
+      const date = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
+      const monthKey = `${date.getFullYear()}-${date.getMonth() + 1}`;
+      monthlyData.set(monthKey, {
+        month: date.toLocaleDateString('en-US', { year: 'numeric', month: 'short' }),
+        count: 0,
+        tickets: 0,
+        maintenance: 0,
+        dailyLog: 0,
+        safetyInspection: 0
+      });
+    }
+
+    // Count activities by month
+    workHistory.forEach(item => {
+      const date = new Date(item.date);
+      const monthKey = `${date.getFullYear()}-${date.getMonth() + 1}`;
+      
+      if (monthlyData.has(monthKey)) {
+        const monthData = monthlyData.get(monthKey);
+        monthData.count++;
+        
+        switch (item.type) {
+          case 'ticket':
+            monthData.tickets++;
+            break;
+          case 'maintenance':
+            monthData.maintenance++;
+            break;
+          case 'daily-log':
+            monthData.dailyLog++;
+            break;
+          case 'safety-inspection':
+            monthData.safetyInspection++;
+            break;
+        }
+      }
+    });
+
+    return Array.from(monthlyData.values());
+  }
+
+  // Helper method to get task distribution data
+  static getTaskDistributionData(workHistory: IWorkHistoryEntry[]): any[] {
+    const distribution = {
+      ticket: 0,
+      maintenance: 0,
+      'daily-log': 0,
+      'safety-inspection': 0
+    };
+
+    workHistory.forEach(item => {
+      distribution[item.type]++;
+    });
+
+    return Object.entries(distribution).map(([type, count]) => ({
+      type: type.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase()),
+      count,
+      percentage: workHistory.length > 0 ? Math.round((count / workHistory.length) * 100) : 0
+    }));
+  }
+
+  // Helper method to get performance trends
+  static getPerformanceTrends(workHistory: IWorkHistoryEntry[]): any[] {
+    const trends = [];
+    const currentDate = new Date();
+
+    for (let i = 5; i >= 0; i--) {
+      const date = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
+      const nextDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - i + 1, 1);
+      
+      const monthActivities = workHistory.filter(item => {
+        const itemDate = new Date(item.date);
+        return itemDate >= date && itemDate < nextDate;
+      });
+
+      const completed = monthActivities.filter(item => 
+        ['completed', 'resolved', 'closed'].includes(item.status.toLowerCase())
+      ).length;
+
+      trends.push({
+        month: date.toLocaleDateString('en-US', { year: 'numeric', month: 'short' }),
+        efficiency: monthActivities.length > 0 ? Math.round((completed / monthActivities.length) * 100) : 0,
+        totalTasks: monthActivities.length,
+        completedTasks: completed
+      });
+    }
+
+    return trends;
+  }
+
+  // Helper method to get asset workload data
+  static getAssetWorkloadData(workHistory: IWorkHistoryEntry[]): any[] {
+    const assetWorkload = new Map();
+
+    workHistory.forEach(item => {
+      if (item.assetId && item.assetName) {
+        if (!assetWorkload.has(item.assetId)) {
+          assetWorkload.set(item.assetId, {
+            assetId: item.assetId,
+            assetName: item.assetName,
+            count: 0,
+            types: {
+              ticket: 0,
+              maintenance: 0,
+              'daily-log': 0,
+              'safety-inspection': 0
+            }
+          });
+        }
+        
+        const asset = assetWorkload.get(item.assetId);
+        asset.count++;
+        asset.types[item.type]++;
+      }
+    });
+
+    return Array.from(assetWorkload.values())
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 10); // Top 10 assets
   }
 
   // Get employee statistics
