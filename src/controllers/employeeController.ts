@@ -67,6 +67,11 @@ export class EmployeeController {
         role: emp.role,
         status: emp.status,
         avatar: emp.avatar,
+        employeeId: emp.employeeId,
+        joinDate: emp.joinDate,
+        supervisor: emp.supervisor,
+        accessLevel: emp.accessLevel,
+        shiftInfo: emp.shiftInfo,
         createdAt: emp.createdAt,
         updatedAt: emp.updatedAt
       }));
@@ -153,7 +158,33 @@ export class EmployeeController {
         return;
       }
 
-      const { name, email, phone, department, role, status = 'active', avatar } = req.body;
+      const { 
+        name, 
+        email, 
+        password,
+        phone, 
+        department, 
+        role, 
+        status = 'active', 
+        avatar,
+        employeeId,
+        joinDate,
+        supervisor,
+        accessLevel = 'normal_user',
+        skills,
+        certifications,
+        shiftInfo,
+        emergencyContact
+      } = req.body;
+
+      // Validate required fields
+      if (!password) {
+        res.status(400).json({
+          success: false,
+          message: 'Password is required'
+        });
+        return;
+      }
 
       // Check if employee email already exists
       const existingEmployee = await Employee.findOne({ 
@@ -172,11 +203,20 @@ export class EmployeeController {
       const employee = new Employee({
         name,
         email: email.toLowerCase(),
+        password, // Will be hashed by pre-save middleware
         phone,
         department,
         role,
         status,
-        avatar: avatar || '/placeholder-user.jpg'
+        avatar: avatar || '/placeholder-user.jpg',
+        employeeId,
+        joinDate,
+        supervisor,
+        accessLevel,
+        skills,
+        certifications,
+        shiftInfo,
+        emergencyContact
       });
 
       const savedEmployee = await employee.save();
@@ -191,6 +231,14 @@ export class EmployeeController {
         role: savedEmployee.role,
         status: savedEmployee.status,
         avatar: savedEmployee.avatar,
+        employeeId: savedEmployee.employeeId,
+        joinDate: savedEmployee.joinDate,
+        supervisor: savedEmployee.supervisor,
+        accessLevel: savedEmployee.accessLevel,
+        skills: savedEmployee.skills,
+        certifications: savedEmployee.certifications,
+        shiftInfo: savedEmployee.shiftInfo,
+        emergencyContact: savedEmployee.emergencyContact,
         createdAt: savedEmployee.createdAt,
         updatedAt: savedEmployee.updatedAt
       };
@@ -267,12 +315,21 @@ export class EmployeeController {
         updates.email = updates.email.toLowerCase();
       }
 
-      // Update employee
-      const updatedEmployee = await Employee.findByIdAndUpdate(
-        id,
-        { $set: updates },
-        { new: true, runValidators: true }
-      ).lean();
+      // If password is being updated, we need to use save() to trigger pre-save middleware for hashing
+      let updatedEmployee;
+      if (updates.password) {
+        // Update using save() to trigger password hashing
+        Object.assign(existingEmployee, updates);
+        const savedEmployee = await existingEmployee.save();
+        updatedEmployee = savedEmployee.toObject();
+      } else {
+        // For non-password updates, use findByIdAndUpdate
+        updatedEmployee = await Employee.findByIdAndUpdate(
+          id,
+          { $set: updates },
+          { new: true, runValidators: true }
+        ).lean();
+      }
 
       if (!updatedEmployee) {
         res.status(404).json({
@@ -401,7 +458,7 @@ export class EmployeeController {
         supervisor: employee.supervisor,
         skills: employee.skills || [],
         certifications: employee.certifications || [],
-        workShift: employee.workShift,
+        shiftInfo: employee.shiftInfo,
         emergencyContact: employee.emergencyContact,
         workHistory: workHistory,
         assetAssignments: employee.assetAssignments || [],
@@ -917,6 +974,111 @@ export class EmployeeController {
     return Array.from(assetWorkload.values())
       .sort((a, b) => b.count - a.count)
       .slice(0, 10); // Top 10 assets
+  }
+
+  // Get employees formatted as shift details for compatibility
+  static async getEmployeesAsShiftDetails(req: Request, res: Response): Promise<void> {
+    try {
+      const { 
+        page = 1, 
+        limit = 10, 
+        search, 
+        department,
+        shiftType,
+        status, 
+        location,
+        sortBy = 'name', 
+        sortOrder = 'asc' 
+      } = req.query;
+
+      // Build query for shift-related data
+      const query: any = {};
+      
+      if (department && department !== 'all') {
+        query.department = { $regex: department, $options: 'i' };
+      }
+
+      if (shiftType && shiftType !== 'all') {
+        query['shiftInfo.shiftType'] = shiftType;
+      }
+
+      if (status && status !== 'all') {
+        query.status = status;
+      }
+
+      if (location && location !== 'all') {
+        query['shiftInfo.location'] = { $regex: location, $options: 'i' };
+      }
+
+      if (search) {
+        query.$or = [
+          { name: { $regex: search, $options: 'i' } },
+          { email: { $regex: search, $options: 'i' } },
+          { phone: { $regex: search, $options: 'i' } },
+          { department: { $regex: search, $options: 'i' } },
+          { role: { $regex: search, $options: 'i' } },
+          { supervisor: { $regex: search, $options: 'i' } }
+        ];
+      }
+
+      // Calculate pagination
+      const skip = (Number(page) - 1) * Number(limit);
+      const sortDirection = sortOrder === 'desc' ? -1 : 1;
+
+      // Execute query with pagination
+      const [employees, totalCount] = await Promise.all([
+        Employee.find(query)
+          .sort({ [sortBy as string]: sortDirection })
+          .skip(skip)
+          .limit(Number(limit))
+          .lean(),
+        Employee.countDocuments(query)
+      ]);
+
+      // Transform to shift details format for compatibility
+      const transformedShiftDetails = employees.map(emp => ({
+        id: emp.employeeId || emp._id.toString(),
+        employeeId: emp.employeeId || emp._id.toString(),
+        employeeName: emp.name,
+        email: emp.email,
+        phone: emp.phone,
+        department: emp.department,
+        role: emp.role,
+        shiftType: emp.shiftInfo?.shiftType || 'day',
+        shiftStartTime: emp.shiftInfo?.shiftStartTime || '08:00',
+        shiftEndTime: emp.shiftInfo?.shiftEndTime || '16:00',
+        workDays: emp.shiftInfo?.workDays || [],
+        supervisor: emp.supervisor || '',
+        location: emp.shiftInfo?.location || 'Not assigned',
+        status: emp.status,
+        joinDate: emp.joinDate ? emp.joinDate.toISOString().split('T')[0] : '',
+        avatar: emp.avatar,
+        createdAt: emp.createdAt,
+        updatedAt: emp.updatedAt
+      }));
+
+      res.status(200).json({
+        success: true,
+        data: {
+          shiftDetails: transformedShiftDetails,
+          pagination: {
+            currentPage: Number(page),
+            totalPages: Math.ceil(totalCount / Number(limit)),
+            totalCount,
+            hasNext: skip + Number(limit) < totalCount,
+            hasPrevious: Number(page) > 1
+          }
+        },
+        message: 'Shift details retrieved successfully'
+      });
+    } catch (error: any) {
+      console.error('Error fetching shift details:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error while fetching shift details',
+        error: process.env.NODE_ENV === 'development' ? error : undefined
+      });
+    }
   }
 
   // Get employee statistics

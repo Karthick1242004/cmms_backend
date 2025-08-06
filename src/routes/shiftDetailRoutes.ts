@@ -1,53 +1,56 @@
 import { Router } from 'express';
-import { ShiftDetailController } from '../controllers/shiftDetailController';
+import { EmployeeController } from '../controllers/employeeController';
 import {
-  validateCreateShiftDetail,
-  validateUpdateShiftDetail,
-  validateShiftDetailId,
-  validateShiftDetailQuery
-} from '../middleware/shiftDetailValidation';
+  validateCreateEmployee,
+  validateUpdateEmployee,
+  validateEmployeeId,
+  validateEmployeeQuery
+} from '../middleware/employeeValidation';
 
 const router = Router();
 
-// GET /api/shift-details - Get all shift details with optional filtering and pagination
+// Redirect shift-details routes to unified employee controller
+// This maintains backward compatibility while using the unified data model
+
+// GET /api/shift-details - Get all shift details (redirected to employees)
 router.get(
   '/',
-  validateShiftDetailQuery,
-  ShiftDetailController.getAllShiftDetails
+  validateEmployeeQuery,
+  EmployeeController.getEmployeesAsShiftDetails
 );
 
-// GET /api/shift-details/stats - Get shift detail statistics
+// GET /api/shift-details/stats - Get shift detail statistics (redirected to employee stats)
 router.get(
   '/stats',
-  ShiftDetailController.getShiftDetailStats
+  EmployeeController.getEmployeeStats
 );
 
-// GET /api/shift-details/:id - Get shift detail by employee ID
+// GET /api/shift-details/:id - Get shift detail by employee ID (redirected to employee)
 router.get(
   '/:id',
-  validateShiftDetailId,
-  ShiftDetailController.getShiftDetailById
+  validateEmployeeId,
+  EmployeeController.getEmployeeById
 );
 
-// POST /api/shift-details - Create new shift detail
+// POST /api/shift-details - Create new shift detail (redirected to employee creation)
 router.post(
   '/',
-  validateCreateShiftDetail,
-  ShiftDetailController.createShiftDetail
+  validateCreateEmployee,
+  EmployeeController.createEmployee
 );
 
-// PUT /api/shift-details/:id - Update shift detail
+// PUT /api/shift-details/:id - Update shift detail (redirected to employee update)
 router.put(
   '/:id',
-  validateUpdateShiftDetail,
-  ShiftDetailController.updateShiftDetail
+  validateUpdateEmployee,
+  EmployeeController.updateEmployee
 );
 
-// DELETE /api/shift-details/:id - Delete shift detail
+// DELETE /api/shift-details/:id - Delete shift detail (redirected to employee deletion)
 router.delete(
   '/:id',
-  validateShiftDetailId,
-  ShiftDetailController.deleteShiftDetail
+  validateEmployeeId,
+  EmployeeController.deleteEmployee
 );
 
 export default router; 

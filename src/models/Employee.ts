@@ -1,4 +1,5 @@
 import mongoose, { Document, Schema } from 'mongoose';
+import bcrypt from 'bcryptjs';
 
 export interface IWorkHistoryEntry {
   date: Date;
@@ -35,6 +36,16 @@ export interface IPerformanceMetrics {
   rating: number; // 1-5 scale
 }
 
+// Shift information interface
+export interface IShiftInfo {
+  shiftType: 'day' | 'night' | 'rotating' | 'on-call';
+  shiftStartTime: string; // Format: "HH:MM"
+  shiftEndTime: string; // Format: "HH:MM"
+  workDays: string[]; // Array of days: ["Monday", "Tuesday", ...]
+  location: string; // Work location
+  effectiveDate?: Date; // When this shift assignment starts
+}
+
 export interface IEmployee extends Document {
   _id: string;
   name: string;
@@ -42,8 +53,12 @@ export interface IEmployee extends Document {
   phone: string;
   department: string;
   role: string;
-  status: 'active' | 'inactive';
+  status: 'active' | 'inactive' | 'on-leave';
   avatar?: string;
+  
+  // Authentication
+  password: string; // Hashed password for login
+  lastLoginAt?: Date;
   
   // Extended fields for detailed tracking
   employeeId?: string; // Unique employee identifier
@@ -51,12 +66,14 @@ export interface IEmployee extends Document {
   supervisor?: string; // Employee ID of supervisor
   skills?: string[]; // Array of skills/competencies
   certifications?: string[]; // Array of certifications
-  workShift?: 'day' | 'night' | 'rotating' | 'on-call';
   emergencyContact?: {
     name: string;
     relationship: string;
     phone: string;
   };
+  
+  // Shift information (unified from ShiftDetail)
+  shiftInfo?: IShiftInfo;
   
   // Work history and assignments
   workHistory: IWorkHistoryEntry[];
@@ -71,8 +88,14 @@ export interface IEmployee extends Document {
   productivityScore?: number;
   reliabilityScore?: number;
   
+  // User access levels (for authentication)
+  accessLevel?: 'super_admin' | 'department_admin' | 'normal_user';
+  
   createdAt: Date;
   updatedAt: Date;
+  
+  // Methods
+  comparePassword(candidatePassword: string): Promise<boolean>;
 }
 
 const WorkHistorySchema = new Schema({
@@ -122,6 +145,39 @@ const PerformanceMetricsSchema = new Schema({
   rating: { type: Number, default: 3, min: 1, max: 5 } // 1-5 scale
 });
 
+const ShiftInfoSchema = new Schema({
+  shiftType: {
+    type: String,
+    enum: ['day', 'night', 'rotating', 'on-call'],
+    required: true
+  },
+  shiftStartTime: {
+    type: String,
+    required: true,
+    match: [/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Please enter a valid time format (HH:MM)']
+  },
+  shiftEndTime: {
+    type: String,
+    required: true,
+    match: [/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Please enter a valid time format (HH:MM)']
+  },
+  workDays: {
+    type: [String],
+    enum: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
+    default: []
+  },
+  location: {
+    type: String,
+    required: true,
+    trim: true,
+    maxlength: [100, 'Location cannot exceed 100 characters']
+  },
+  effectiveDate: {
+    type: Date,
+    default: Date.now
+  }
+});
+
 const EmployeeSchema = new Schema<IEmployee>(
   {
     name: {
@@ -169,8 +225,8 @@ const EmployeeSchema = new Schema<IEmployee>(
     status: {
       type: String,
       enum: {
-        values: ['active', 'inactive'],
-        message: 'Status must be either active or inactive',
+        values: ['active', 'inactive', 'on-leave'],
+        message: 'Status must be active, inactive, or on-leave',
       },
       default: 'active',
       index: true,
@@ -179,6 +235,16 @@ const EmployeeSchema = new Schema<IEmployee>(
       type: String,
       trim: true,
       default: '/placeholder-user.jpg',
+    },
+    
+    // Authentication
+    password: {
+      type: String,
+      required: [true, 'Password is required'],
+      minlength: [6, 'Password must be at least 6 characters long'],
+    },
+    lastLoginAt: {
+      type: Date,
     },
     
     // Extended fields for detailed tracking
@@ -204,15 +270,16 @@ const EmployeeSchema = new Schema<IEmployee>(
       type: String,
       trim: true,
     }],
-    workShift: {
-      type: String,
-      enum: ['day', 'night', 'rotating', 'on-call'],
-      default: 'day',
-    },
     emergencyContact: {
       name: { type: String, trim: true },
       relationship: { type: String, trim: true },
       phone: { type: String, trim: true },
+    },
+    
+    // Shift information (unified from ShiftDetail)
+    shiftInfo: {
+      type: ShiftInfoSchema,
+      default: null,
     },
     
     // Work history and assignments
@@ -252,6 +319,14 @@ const EmployeeSchema = new Schema<IEmployee>(
       min: 0,
       max: 100,
     },
+    
+    // User access levels (for authentication)
+    accessLevel: {
+      type: String,
+      enum: ['super_admin', 'department_admin', 'normal_user'],
+      default: 'normal_user',
+      index: true,
+    },
   },
   {
     timestamps: true,
@@ -274,19 +349,40 @@ EmployeeSchema.virtual('displayName').get(function() {
   return `${this.name} - ${this.department} (${this.role})`;
 });
 
-// Pre-save middleware to capitalize first letter of name and normalize data
-EmployeeSchema.pre('save', function(next) {
-  if (this.name) {
-    this.name = this.name.charAt(0).toUpperCase() + this.name.slice(1);
+// Pre-save middleware to hash password and normalize data
+EmployeeSchema.pre('save', async function(next) {
+  try {
+    // Hash password if it's modified
+    if (this.isModified('password')) {
+      const salt = await bcrypt.genSalt(12);
+      this.password = await bcrypt.hash(this.password, salt);
+    }
+    
+    // Normalize name fields
+    if (this.name) {
+      this.name = this.name.charAt(0).toUpperCase() + this.name.slice(1);
+    }
+    if (this.department) {
+      this.department = this.department.charAt(0).toUpperCase() + this.department.slice(1);
+    }
+    if (this.role) {
+      this.role = this.role.charAt(0).toUpperCase() + this.role.slice(1);
+    }
+    
+    next();
+  } catch (error) {
+    next(error as Error);
   }
-  if (this.department) {
-    this.department = this.department.charAt(0).toUpperCase() + this.department.slice(1);
-  }
-  if (this.role) {
-    this.role = this.role.charAt(0).toUpperCase() + this.role.slice(1);
-  }
-  next();
 });
+
+// Method to compare password
+EmployeeSchema.methods.comparePassword = async function(candidatePassword: string): Promise<boolean> {
+  try {
+    return await bcrypt.compare(candidatePassword, this.password);
+  } catch (error) {
+    throw new Error('Password comparison failed');
+  }
+};
 
 // Transform to frontend format
 EmployeeSchema.set('toJSON', {
@@ -294,6 +390,7 @@ EmployeeSchema.set('toJSON', {
     ret.id = ret._id;
     delete ret._id;
     delete ret.__v;
+    delete ret.password; // Never expose password in JSON responses
     return ret;
   },
 });

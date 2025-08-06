@@ -22,6 +22,13 @@ router.get(
   EmployeeController.getEmployeeStats
 );
 
+// GET /api/employees/shift-details - Get employees formatted as shift details (compatibility route)
+router.get(
+  '/shift-details',
+  validateEmployeeQuery,
+  EmployeeController.getEmployeesAsShiftDetails
+);
+
 // GET /api/employees/:id/details - Get detailed employee information with work history and analytics
 router.get(
   '/:id/details',
