@@ -123,7 +123,7 @@ export class AssetController {
         meteringEvents: asset.meteringEvents,
         personnel: asset.personnel,
         warrantyDetails: asset.warrantyDetails,
-        businesses: asset.businesses,
+
         files: asset.files,
         financials: asset.financials,
         purchaseInfo: asset.purchaseInfo,
@@ -219,7 +219,7 @@ export class AssetController {
         meteringEvents: asset.meteringEvents,
         personnel: asset.personnel,
         warrantyDetails: asset.warrantyDetails,
-        businesses: asset.businesses,
+
         files: asset.files,
         financials: asset.financials,
         purchaseInfo: asset.purchaseInfo,
@@ -259,6 +259,8 @@ export class AssetController {
       }
 
       const assetData = req.body;
+
+
 
       // Check if asset with same serial number already exists (if serial number provided)
       if (assetData.serialNo) {

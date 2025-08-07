@@ -42,11 +42,12 @@ export interface IAsset extends Document {
   purchasePrice?: number;
   condition?: 'excellent' | 'good' | 'fair' | 'poor' | 'new';
   imageSrc?: string;
+  qrCodeSrc?: string;
   partsBOM?: any[];
   meteringEvents?: any[];
   personnel?: any[];
   warrantyDetails?: any;
-  businesses?: any[];
+
   files?: any[];
   financials?: any;
   purchaseInfo?: any;
@@ -279,6 +280,11 @@ const AssetSchema = new Schema<IAsset>(
       trim: true,
       default: '/placeholder.svg?height=150&width=250',
     },
+    qrCodeSrc: {
+      type: String,
+      trim: true,
+      default: '',
+    },
     partsBOM: [{
       id: String,
       partName: String,
@@ -320,13 +326,7 @@ const AssetSchema = new Schema<IAsset>(
         cost: Number,
       }],
     },
-    businesses: [{
-      id: String,
-      name: String,
-      type: String,
-      contactPerson: String,
-      phone: String,
-    }],
+
     files: [{
       id: String,
       name: String,
@@ -334,6 +334,10 @@ const AssetSchema = new Schema<IAsset>(
       size: String,
       uploadDate: String,
       uploadedBy: String,
+      category: String,
+      description: String,
+      url: String,
+      isLink: Boolean,
     }],
     financials: {
       totalCostOfOwnership: Number,
