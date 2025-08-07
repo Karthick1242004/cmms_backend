@@ -18,6 +18,7 @@ import meetingMinutesRoutes from './routes/meetingMinutesRoutes';
 import dailyLogActivityRoutes from './routes/dailyLogActivityRoutes';
 import noticeBoardRoutes from './routes/noticeBoardRoutes';
 import locationRoutes from './routes/locationRoutes';
+import partRoutes from './routes/partRoutes';
 
 // Load environment variables
 dotenv.config();
@@ -247,6 +248,7 @@ app.use('/api/meeting-minutes', meetingMinutesRoutes);
 app.use('/api/daily-log-activities', dailyLogActivityRoutes);
 app.use('/api/notice-board', noticeBoardRoutes);
 app.use('/api/locations', locationRoutes);
+app.use('/api/parts', partRoutes);
 
 // Root endpoint
 app.get('/', (req: Request, res: Response): void => {
