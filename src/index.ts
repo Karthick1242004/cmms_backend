@@ -17,6 +17,7 @@ import ticketRoutes from './routes/ticketRoutes';
 import meetingMinutesRoutes from './routes/meetingMinutesRoutes';
 import dailyLogActivityRoutes from './routes/dailyLogActivityRoutes';
 import noticeBoardRoutes from './routes/noticeBoardRoutes';
+import locationRoutes from './routes/locationRoutes';
 
 // Load environment variables
 dotenv.config();
@@ -245,6 +246,7 @@ app.use('/api/tickets', ticketRoutes);
 app.use('/api/meeting-minutes', meetingMinutesRoutes);
 app.use('/api/daily-log-activities', dailyLogActivityRoutes);
 app.use('/api/notice-board', noticeBoardRoutes);
+app.use('/api/locations', locationRoutes);
 
 // Root endpoint
 app.get('/', (req: Request, res: Response): void => {
@@ -255,19 +257,20 @@ app.get('/', (req: Request, res: Response): void => {
     database: 'MongoDB Atlas - cmms',
     documentation: '/api/docs',
     health: '/health',
-    endpoints: {
-      departments: '/api/departments',
-      shift_details: '/api/shift-details',
-      maintenance: '/api/maintenance',
-      safety_inspection: '/api/safety-inspection',
-      employees: '/api/employees',
-      assets: '/api/assets',
-      tickets: '/api/tickets',
-      meeting_minutes: '/api/meeting-minutes',
-      daily_log_activities: '/api/daily-log-activities',
-      notice_board: '/api/notice-board',
-      database_info: '/api/database/info'
-    }
+          endpoints: {
+        departments: '/api/departments',
+        shift_details: '/api/shift-details',
+        maintenance: '/api/maintenance',
+        safety_inspection: '/api/safety-inspection',
+        employees: '/api/employees',
+        assets: '/api/assets',
+        tickets: '/api/tickets',
+        meeting_minutes: '/api/meeting-minutes',
+        daily_log_activities: '/api/daily-log-activities',
+        notice_board: '/api/notice-board',
+        locations: '/api/locations',
+        database_info: '/api/database/info'
+      }
   });
 });
 
