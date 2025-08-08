@@ -49,6 +49,7 @@ export class DepartmentController {
       const transformedDepartments = departments.map((dept: any) => ({
         id: dept._id.toString(),
         name: dept.name,
+        code: dept.code,
         description: dept.description,
         manager: dept.manager,
         employeeCount: dept.employeeCount,
@@ -100,6 +101,7 @@ export class DepartmentController {
       const transformedDepartment = {
         id: department._id.toString(),
         name: department.name,
+        code: department.code,
         description: department.description,
         manager: department.manager,
         employeeCount: department.employeeCount,
@@ -137,7 +139,7 @@ export class DepartmentController {
         return;
       }
 
-      const { name, description, manager, employeeCount = 0, status = 'active' } = req.body;
+      const { name, code, description, manager, employeeCount = 0, status = 'active' } = req.body;
 
       // Check if department name already exists
       const existingDepartment = await (Department as any).findOne({ 
@@ -155,6 +157,7 @@ export class DepartmentController {
       // Create new department
       const department = new Department({
         name,
+        code,
         description,
         manager,
         employeeCount,
@@ -167,6 +170,7 @@ export class DepartmentController {
       const transformedDepartment = {
         id: savedDepartment._id.toString(),
         name: savedDepartment.name,
+        code: savedDepartment.code,
         description: savedDepartment.description,
         manager: savedDepartment.manager,
         employeeCount: savedDepartment.employeeCount,
