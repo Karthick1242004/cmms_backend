@@ -1,0 +1,11 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const partController_1 = require("../controllers/partController");
+const authMiddleware_1 = require("../middleware/authMiddleware");
+const router = (0, express_1.Router)();
+router.get('/', authMiddleware_1.extractUserContext, partController_1.PartController.getAllParts);
+router.get('/stats', authMiddleware_1.extractUserContext, partController_1.PartController.getPartsStats);
+router.get('/sync', authMiddleware_1.extractUserContext, partController_1.PartController.syncPartsFromAssets);
+router.get('/:id', authMiddleware_1.extractUserContext, partController_1.PartController.getPartById);
+exports.default = router;

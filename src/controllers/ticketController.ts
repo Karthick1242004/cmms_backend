@@ -78,7 +78,7 @@ export class TicketController {
 
       // Execute query with pagination
       const [tickets, totalCount] = await Promise.all([
-        Ticket.find(query)
+        (Ticket as any).find(query)
           .sort({ [sortBy as string]: sortDirection })
           .skip(skip)
           .limit(Number(limit))
@@ -87,7 +87,7 @@ export class TicketController {
       ]);
 
       // Transform for frontend compatibility
-      const transformedTickets = tickets.map(ticket => ({
+      const transformedTickets = tickets.map((ticket: any) => ({
         id: ticket._id.toString(),
         ...ticket,
         timeSinceLogged: (() => {
@@ -137,7 +137,7 @@ export class TicketController {
       const { id } = req.params;
       const userDepartment = req.headers['x-user-department'];
 
-      const ticket = await Ticket.findById(id).lean();
+      const ticket = await (Ticket as any).findById(id).lean();
 
       if (!ticket) {
         res.status(404).json({
@@ -280,7 +280,7 @@ export class TicketController {
       const userName = (req.headers['x-user-name'] as string) || 'System';
 
       // Check if ticket exists and user has access
-      const existingTicket = await Ticket.findById(id);
+      const existingTicket = await (Ticket as any).findById(id);
       if (!existingTicket) {
         res.status(404).json({
           success: false,
@@ -318,7 +318,7 @@ export class TicketController {
       });
 
       // Update ticket
-      const updatedTicket = await Ticket.findByIdAndUpdate(
+      const updatedTicket = await (Ticket as any).findByIdAndUpdate(
         id,
         { $set: updates },
         { new: true, runValidators: true }
@@ -379,7 +379,7 @@ export class TicketController {
         return;
       }
 
-      const ticket = await Ticket.findById(id);
+      const ticket = await (Ticket as any).findById(id);
       if (!ticket) {
         res.status(404).json({
           success: false,
@@ -428,7 +428,7 @@ export class TicketController {
       const { assignedUsers, assignedDepartments, remarks } = req.body;
       const userName = (req.headers['x-user-name'] as string) || 'System';
 
-      const ticket = await Ticket.findById(id);
+      const ticket = await (Ticket as any).findById(id);
       if (!ticket) {
         res.status(404).json({
           success: false,
@@ -486,7 +486,7 @@ export class TicketController {
         return;
       }
 
-      const ticket = await Ticket.findById(id);
+      const ticket = await (Ticket as any).findById(id);
       if (!ticket) {
         res.status(404).json({
           success: false,
@@ -542,12 +542,12 @@ export class TicketController {
         query.status = status;
       }
 
-      const tickets = await Ticket.find(query)
+      const tickets = await (Ticket as any).find(query)
         .sort({ loggedDateTime: -1 })
         .limit(Number(limit))
         .lean();
 
-      const transformedTickets = tickets.map(ticket => ({
+      const transformedTickets = tickets.map((ticket: any) => ({
         id: ticket._id.toString(),
         ...ticket
       }));
@@ -579,12 +579,12 @@ export class TicketController {
         query.status = status;
       }
 
-      const tickets = await Ticket.find(query)
+      const tickets = await (Ticket as any).find(query)
         .sort({ loggedDateTime: -1 })
         .limit(Number(limit))
         .lean();
 
-      const transformedTickets = tickets.map(ticket => ({
+      const transformedTickets = tickets.map((ticket: any) => ({
         id: ticket._id.toString(),
         ...ticket
       }));
@@ -626,12 +626,12 @@ export class TicketController {
         ]
       };
 
-      const tickets = await Ticket.find(query)
+      const tickets = await (Ticket as any).find(query)
         .sort({ loggedDateTime: -1 })
         .limit(100)
         .lean();
 
-      const transformedTickets = tickets.map(ticket => ({
+      const transformedTickets = tickets.map((ticket: any) => ({
         id: ticket._id.toString(),
         ...ticket
       }));
@@ -697,7 +697,7 @@ export class TicketController {
             }
           }
         ]),
-        Ticket.find(baseQuery)
+        (Ticket as any).find(baseQuery)
           .sort({ loggedDateTime: -1 })
           .limit(5)
           .select('ticketId subject status priority loggedDateTime')
@@ -717,7 +717,7 @@ export class TicketController {
           critical: criticalPriorityTickets
         },
         byType: ticketsByType[0] || { service: 0, maintenance: 0, incident: 0, breakdown: 0 },
-        recent: recentTickets.map(ticket => ({
+        recent: recentTickets.map((ticket: any) => ({
           id: ticket._id.toString(),
           ...ticket
         }))
@@ -744,7 +744,7 @@ export class TicketController {
       const { id } = req.params;
       const userName = (req.headers['x-user-name'] as string) || 'System';
 
-      const ticket = await Ticket.findById(id);
+      const ticket = await (Ticket as any).findById(id);
 
       if (!ticket) {
         res.status(404).json({

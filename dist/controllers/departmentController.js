@@ -28,10 +28,11 @@ class DepartmentController {
                     .sort({ [sortBy]: sortDirection })
                     .skip(skip)
                     .limit(Number(limit))
-                    .lean(),
+                    .lean()
+                    .exec(),
                 Department_1.default.countDocuments(query)
             ]);
-            const transformedDepartments = departments.map(dept => ({
+            const transformedDepartments = departments.map((dept) => ({
                 id: dept._id.toString(),
                 name: dept.name,
                 description: dept.description,
@@ -68,7 +69,7 @@ class DepartmentController {
     static async getDepartmentById(req, res) {
         try {
             const { id } = req.params;
-            const department = await Department_1.default.findById(id).lean();
+            const department = await Department_1.default.findById(id).lean().exec();
             if (!department) {
                 res.status(404).json({
                     success: false,
@@ -115,7 +116,7 @@ class DepartmentController {
             const { name, description, manager, employeeCount = 0, status = 'active' } = req.body;
             const existingDepartment = await Department_1.default.findOne({
                 name: { $regex: new RegExp(`^${name}$`, 'i') }
-            });
+            }).exec();
             if (existingDepartment) {
                 res.status(409).json({
                     success: false,
@@ -176,7 +177,7 @@ class DepartmentController {
             }
             const { id } = req.params;
             const updates = req.body;
-            const existingDepartment = await Department_1.default.findById(id);
+            const existingDepartment = await Department_1.default.findById(id).exec();
             if (!existingDepartment) {
                 res.status(404).json({
                     success: false,
@@ -188,7 +189,7 @@ class DepartmentController {
                 const duplicateDepartment = await Department_1.default.findOne({
                     name: { $regex: new RegExp(`^${updates.name}$`, 'i') },
                     _id: { $ne: id }
-                });
+                }).exec();
                 if (duplicateDepartment) {
                     res.status(409).json({
                         success: false,
@@ -197,7 +198,7 @@ class DepartmentController {
                     return;
                 }
             }
-            const updatedDepartment = await Department_1.default.findByIdAndUpdate(id, { $set: updates }, { new: true, runValidators: true }).lean();
+            const updatedDepartment = await Department_1.default.findByIdAndUpdate(id, { $set: updates }, { new: true, runValidators: true }).lean().exec();
             if (!updatedDepartment) {
                 res.status(404).json({
                     success: false,
@@ -240,7 +241,7 @@ class DepartmentController {
     static async deleteDepartment(req, res) {
         try {
             const { id } = req.params;
-            const deletedDepartment = await Department_1.default.findByIdAndDelete(id);
+            const deletedDepartment = await Department_1.default.findByIdAndDelete(id).exec();
             if (!deletedDepartment) {
                 res.status(404).json({
                     success: false,

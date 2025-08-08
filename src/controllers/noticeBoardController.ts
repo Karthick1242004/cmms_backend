@@ -233,7 +233,7 @@ export const createNoticeBoard = async (req: AuthenticatedRequest, res: Response
 
     // Validate target departments exist
     if (targetAudience === 'department' && targetDepartments.length > 0) {
-      const existingDepts = await Department.find({
+      const existingDepts = await (Department as any).find({
         _id: { $in: targetDepartments }
       }).select('_id');
       
@@ -337,7 +337,7 @@ export const updateNoticeBoard = async (req: AuthenticatedRequest, res: Response
 
     // Validate target departments if provided
     if (targetAudience === 'department' && targetDepartments?.length > 0) {
-      const existingDepts = await Department.find({
+      const existingDepts = await (Department as any).find({
         _id: { $in: targetDepartments }
       }).select('_id');
       

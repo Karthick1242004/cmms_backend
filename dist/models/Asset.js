@@ -256,6 +256,11 @@ const AssetSchema = new mongoose_1.Schema({
         trim: true,
         default: '/placeholder.svg?height=150&width=250',
     },
+    qrCodeSrc: {
+        type: String,
+        trim: true,
+        default: '',
+    },
     partsBOM: [{
             id: String,
             partName: String,
@@ -297,13 +302,6 @@ const AssetSchema = new mongoose_1.Schema({
                 cost: Number,
             }],
     },
-    businesses: [{
-            id: String,
-            name: String,
-            type: String,
-            contactPerson: String,
-            phone: String,
-        }],
     files: [{
             id: String,
             name: String,
@@ -311,6 +309,10 @@ const AssetSchema = new mongoose_1.Schema({
             size: String,
             uploadDate: String,
             uploadedBy: String,
+            category: String,
+            description: String,
+            url: String,
+            isLink: Boolean,
         }],
     financials: {
         totalCostOfOwnership: Number,

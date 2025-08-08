@@ -37,10 +37,11 @@ class EmployeeController {
                     .sort({ [sortBy]: sortDirection })
                     .skip(skip)
                     .limit(Number(limit))
-                    .lean(),
+                    .lean()
+                    .exec(),
                 Employee_1.default.countDocuments(query)
             ]);
-            const transformedEmployees = employees.map(emp => ({
+            const transformedEmployees = employees.map((emp) => ({
                 id: emp._id.toString(),
                 name: emp.name,
                 email: emp.email,
@@ -84,7 +85,7 @@ class EmployeeController {
     static async getEmployeeById(req, res) {
         try {
             const { id } = req.params;
-            const employee = await Employee_1.default.findById(id).lean();
+            const employee = await Employee_1.default.findById(id).lean().exec();
             if (!employee) {
                 res.status(404).json({
                     success: false,
@@ -140,7 +141,7 @@ class EmployeeController {
             }
             const existingEmployee = await Employee_1.default.findOne({
                 email: email.toLowerCase()
-            });
+            }).exec();
             if (existingEmployee) {
                 res.status(409).json({
                     success: false,
@@ -222,7 +223,7 @@ class EmployeeController {
             }
             const { id } = req.params;
             const updates = req.body;
-            const existingEmployee = await Employee_1.default.findById(id);
+            const existingEmployee = await Employee_1.default.findById(id).exec();
             if (!existingEmployee) {
                 res.status(404).json({
                     success: false,
@@ -234,7 +235,7 @@ class EmployeeController {
                 const duplicateEmployee = await Employee_1.default.findOne({
                     email: updates.email.toLowerCase(),
                     _id: { $ne: id }
-                });
+                }).exec();
                 if (duplicateEmployee) {
                     res.status(409).json({
                         success: false,
@@ -253,7 +254,7 @@ class EmployeeController {
                 updatedEmployee = savedEmployee.toObject();
             }
             else {
-                updatedEmployee = await Employee_1.default.findByIdAndUpdate(id, { $set: updates }, { new: true, runValidators: true }).lean();
+                updatedEmployee = await Employee_1.default.findByIdAndUpdate(id, { $set: updates }, { new: true, runValidators: true }).lean().exec();
             }
             if (!updatedEmployee) {
                 res.status(404).json({
@@ -299,7 +300,7 @@ class EmployeeController {
     static async deleteEmployee(req, res) {
         try {
             const { id } = req.params;
-            const deletedEmployee = await Employee_1.default.findByIdAndDelete(id);
+            const deletedEmployee = await Employee_1.default.findByIdAndDelete(id).exec();
             if (!deletedEmployee) {
                 res.status(404).json({
                     success: false,
@@ -336,7 +337,7 @@ class EmployeeController {
                 });
                 return;
             }
-            const employee = await Employee_1.default.findById(id).lean();
+            const employee = await Employee_1.default.findById(id).lean().exec();
             if (!employee) {
                 res.status(404).json({
                     success: false,
@@ -398,7 +399,7 @@ class EmployeeController {
                 });
                 return;
             }
-            const employee = await Employee_1.default.findById(id);
+            const employee = await Employee_1.default.findById(id).exec();
             if (!employee) {
                 res.status(404).json({
                     success: false,
@@ -433,7 +434,7 @@ class EmployeeController {
                 });
                 return;
             }
-            const employee = await Employee_1.default.findById(id);
+            const employee = await Employee_1.default.findById(id).exec();
             if (!employee) {
                 res.status(404).json({
                     success: false,
@@ -600,7 +601,7 @@ class EmployeeController {
                 .filter(item => item.duration)
                 .reduce((sum, item) => sum + (item.duration || 0), 0);
             const averageCompletionTime = totalTasksCompleted > 0 ? totalDuration / totalTasksCompleted : 0;
-            const lastActivityDate = workHistory.length > 0 && workHistory[0] ? new Date(workHistory[0].date) : undefined;
+            const lastActivityDate = workHistory.length > 0 && workHistory[0] ? new Date(workHistory[0].date) : new Date();
             const efficiency = workHistory.length > 0 ? (totalTasksCompleted / workHistory.length) * 100 : 0;
             return {
                 totalTasksCompleted,
@@ -823,10 +824,11 @@ class EmployeeController {
                     .sort({ [sortBy]: sortDirection })
                     .skip(skip)
                     .limit(Number(limit))
-                    .lean(),
+                    .lean()
+                    .exec(),
                 Employee_1.default.countDocuments(query)
             ]);
-            const transformedShiftDetails = employees.map(emp => ({
+            const transformedShiftDetails = employees.map((emp) => ({
                 id: emp.employeeId || emp._id.toString(),
                 employeeId: emp.employeeId || emp._id.toString(),
                 employeeName: emp.name,

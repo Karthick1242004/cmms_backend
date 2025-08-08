@@ -42,7 +42,7 @@ const updateAssetDepartments = async () => {
         for (const asset of assetsWithoutDepartment) {
             let assignedDepartment = departmentMapping[asset.category];
             if (!assignedDepartment) {
-                const availableDept = departments.find(d => d.name === 'Maintenance') || departments[0];
+                const availableDept = departments.find((d) => d.name === 'Maintenance') || departments[0];
                 if (availableDept) {
                     assignedDepartment = availableDept.name;
                 }
@@ -51,7 +51,7 @@ const updateAssetDepartments = async () => {
                     continue;
                 }
             }
-            const dept = departments.find(d => d.name === assignedDepartment);
+            const dept = departments.find((d) => d.name === assignedDepartment);
             if (dept) {
                 await Asset_1.default.findByIdAndUpdate(asset._id, {
                     department: dept.name

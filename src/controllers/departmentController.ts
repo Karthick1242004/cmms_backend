@@ -36,16 +36,17 @@ export class DepartmentController {
 
       // Execute query with pagination
       const [departments, totalCount] = await Promise.all([
-        Department.find(query)
+        (Department as any).find(query)
           .sort({ [sortBy as string]: sortDirection })
           .skip(skip)
           .limit(Number(limit))
-          .lean(),
+          .lean()
+          .exec(),
         Department.countDocuments(query)
       ]);
 
       // Transform for frontend compatibility
-      const transformedDepartments = departments.map(dept => ({
+      const transformedDepartments = departments.map((dept: any) => ({
         id: dept._id.toString(),
         name: dept.name,
         description: dept.description,
@@ -85,7 +86,7 @@ export class DepartmentController {
     try {
       const { id } = req.params;
 
-      const department = await Department.findById(id).lean();
+      const department = await (Department as any).findById(id).lean().exec();
 
       if (!department) {
         res.status(404).json({
@@ -139,9 +140,9 @@ export class DepartmentController {
       const { name, description, manager, employeeCount = 0, status = 'active' } = req.body;
 
       // Check if department name already exists
-      const existingDepartment = await Department.findOne({ 
+      const existingDepartment = await (Department as any).findOne({ 
         name: { $regex: new RegExp(`^${name}$`, 'i') } 
-      });
+      }).exec();
 
       if (existingDepartment) {
         res.status(409).json({
@@ -216,7 +217,7 @@ export class DepartmentController {
       const updates = req.body;
 
       // Check if department exists
-      const existingDepartment = await Department.findById(id);
+      const existingDepartment = await (Department as any).findById(id).exec();
       if (!existingDepartment) {
         res.status(404).json({
           success: false,
@@ -227,10 +228,10 @@ export class DepartmentController {
 
       // If name is being updated, check for duplicates
       if (updates.name && updates.name !== existingDepartment.name) {
-        const duplicateDepartment = await Department.findOne({
+        const duplicateDepartment = await (Department as any).findOne({
           name: { $regex: new RegExp(`^${updates.name}$`, 'i') },
           _id: { $ne: id }
-        });
+        }).exec();
 
         if (duplicateDepartment) {
           res.status(409).json({
@@ -242,11 +243,11 @@ export class DepartmentController {
       }
 
       // Update department
-      const updatedDepartment = await Department.findByIdAndUpdate(
+      const updatedDepartment = await (Department as any).findByIdAndUpdate(
         id,
         { $set: updates },
         { new: true, runValidators: true }
-      ).lean();
+      ).lean().exec();
 
       if (!updatedDepartment) {
         res.status(404).json({
@@ -297,7 +298,7 @@ export class DepartmentController {
     try {
       const { id } = req.params;
 
-      const deletedDepartment = await Department.findByIdAndDelete(id);
+      const deletedDepartment = await (Department as any).findByIdAndDelete(id).exec();
 
       if (!deletedDepartment) {
         res.status(404).json({

@@ -12,7 +12,7 @@ async function createTestUsers() {
 
     // Clear existing employees (optional - only for clean setup)
     console.log('Clearing existing employees...');
-    await Employee.deleteMany({});
+    await (Employee as any).deleteMany({});
 
     // Create test users with passwords
     const testUsers = [
@@ -106,10 +106,10 @@ async function createTestUsers() {
     ];
 
     console.log('Creating test users...');
-    const createdUsers = await Employee.insertMany(testUsers);
+    const createdUsers = await (Employee as any).insertMany(testUsers);
     
     console.log('Test users created successfully:');
-    createdUsers.forEach(user => {
+    createdUsers.forEach((user: any) => {
       console.log(`- ${user.name} (${user.email}) - Access Level: ${user.accessLevel}`);
     });
 

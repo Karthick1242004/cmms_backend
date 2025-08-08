@@ -82,14 +82,14 @@ async function seedDepartments() {
 
     // Clear existing departments (optional - remove if you want to keep existing data)
     console.log('🧹 Clearing existing departments...');
-    await Department.deleteMany({});
+    await (Department as any).deleteMany({});
 
     // Insert sample departments
     console.log('🌱 Seeding departments...');
-    const insertedDepartments = await Department.insertMany(sampleDepartments);
+    const insertedDepartments = await (Department as any).insertMany(sampleDepartments);
 
     console.log(`✅ Successfully seeded ${insertedDepartments.length} departments:`);
-    insertedDepartments.forEach((dept, index) => {
+    insertedDepartments.forEach((dept: any, index: any) => {
       console.log(`   ${index + 1}. ${dept.name} (Manager: ${dept.manager})`);
     });
 

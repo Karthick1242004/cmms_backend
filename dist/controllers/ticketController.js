@@ -58,7 +58,7 @@ class TicketController {
                     .lean(),
                 Ticket_1.default.countDocuments(query)
             ]);
-            const transformedTickets = tickets.map(ticket => ({
+            const transformedTickets = tickets.map((ticket) => ({
                 id: ticket._id.toString(),
                 ...ticket,
                 timeSinceLogged: (() => {
@@ -439,7 +439,7 @@ class TicketController {
                 .sort({ loggedDateTime: -1 })
                 .limit(Number(limit))
                 .lean();
-            const transformedTickets = tickets.map(ticket => ({
+            const transformedTickets = tickets.map((ticket) => ({
                 id: ticket._id.toString(),
                 ...ticket
             }));
@@ -470,7 +470,7 @@ class TicketController {
                 .sort({ loggedDateTime: -1 })
                 .limit(Number(limit))
                 .lean();
-            const transformedTickets = tickets.map(ticket => ({
+            const transformedTickets = tickets.map((ticket) => ({
                 id: ticket._id.toString(),
                 ...ticket
             }));
@@ -511,7 +511,7 @@ class TicketController {
                 .sort({ loggedDateTime: -1 })
                 .limit(100)
                 .lean();
-            const transformedTickets = tickets.map(ticket => ({
+            const transformedTickets = tickets.map((ticket) => ({
                 id: ticket._id.toString(),
                 ...ticket
             }));
@@ -580,7 +580,7 @@ class TicketController {
                     critical: criticalPriorityTickets
                 },
                 byType: ticketsByType[0] || { service: 0, maintenance: 0, incident: 0, breakdown: 0 },
-                recent: recentTickets.map(ticket => ({
+                recent: recentTickets.map((ticket) => ({
                     id: ticket._id.toString(),
                     ...ticket
                 }))

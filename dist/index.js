@@ -23,6 +23,7 @@ const meetingMinutesRoutes_1 = __importDefault(require("./routes/meetingMinutesR
 const dailyLogActivityRoutes_1 = __importDefault(require("./routes/dailyLogActivityRoutes"));
 const noticeBoardRoutes_1 = __importDefault(require("./routes/noticeBoardRoutes"));
 const locationRoutes_1 = __importDefault(require("./routes/locationRoutes"));
+const partRoutes_1 = __importDefault(require("./routes/partRoutes"));
 dotenv_1.default.config();
 const app = (0, express_1.default)();
 const PORT = process.env.PORT || process.env.SERVER_PORT || 5001;
@@ -207,6 +208,7 @@ app.use('/api/meeting-minutes', meetingMinutesRoutes_1.default);
 app.use('/api/daily-log-activities', dailyLogActivityRoutes_1.default);
 app.use('/api/notice-board', noticeBoardRoutes_1.default);
 app.use('/api/locations', locationRoutes_1.default);
+app.use('/api/parts', partRoutes_1.default);
 app.get('/', (req, res) => {
     res.status(200).json({
         success: true,

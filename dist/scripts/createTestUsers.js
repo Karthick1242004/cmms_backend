@@ -105,7 +105,7 @@ async function createTestUsers() {
         console.log('Creating test users...');
         const createdUsers = await Employee_1.default.insertMany(testUsers);
         console.log('Test users created successfully:');
-        createdUsers.forEach(user => {
+        createdUsers.forEach((user) => {
             console.log(`- ${user.name} (${user.email}) - Access Level: ${user.accessLevel}`);
         });
         console.log('\nDatabase seeded with test users successfully!');

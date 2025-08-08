@@ -192,14 +192,14 @@ async function seedEmployees() {
 
     // Clear existing employees (optional - remove if you want to keep existing data)
     console.log('🧹 Clearing existing employees...');
-    await Employee.deleteMany({});
+    await (Employee as any).deleteMany({});
 
     // Insert sample employees
     console.log('🌱 Seeding employees...');
-    const insertedEmployees = await Employee.insertMany(sampleEmployees);
+    const insertedEmployees = await (Employee as any).insertMany(sampleEmployees);
 
     console.log(`✅ Successfully seeded ${insertedEmployees.length} employees:`);
-    insertedEmployees.forEach((emp, index) => {
+    insertedEmployees.forEach((emp: any, index: any) => {
       console.log(`   ${index + 1}. ${emp.name} - ${emp.department} (${emp.role})`);
     });
 

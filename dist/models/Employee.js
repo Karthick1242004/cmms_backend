@@ -38,88 +38,59 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importStar(require("mongoose"));
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
-const WorkHistorySchema = new mongoose_1.Schema({
-    date: { type: Date, required: true },
-    type: {
-        type: String,
-        enum: ['ticket', 'maintenance', 'daily-log', 'safety-inspection'],
-        required: true
-    },
-    referenceId: { type: String, required: true },
-    title: { type: String, required: true },
-    description: { type: String },
-    status: { type: String, required: true },
-    assetId: { type: String },
-    assetName: { type: String },
-    duration: { type: Number },
-    priority: { type: String }
-});
-const AssetAssignmentSchema = new mongoose_1.Schema({
-    assetId: { type: String, required: true },
-    assetName: { type: String, required: true },
-    assignedDate: { type: Date, required: true },
-    unassignedDate: { type: Date },
-    status: {
-        type: String,
-        enum: ['active', 'completed', 'transferred'],
-        default: 'active'
-    },
-    role: {
-        type: String,
-        enum: ['primary', 'secondary', 'temporary'],
-        default: 'primary'
-    },
-    notes: { type: String }
-});
-const PerformanceMetricsSchema = new mongoose_1.Schema({
-    totalTasksCompleted: { type: Number, default: 0 },
-    averageCompletionTime: { type: Number, default: 0 },
-    ticketsResolved: { type: Number, default: 0 },
-    maintenanceCompleted: { type: Number, default: 0 },
-    safetyInspectionsCompleted: { type: Number, default: 0 },
-    dailyLogEntries: { type: Number, default: 0 },
-    lastActivityDate: { type: Date },
-    efficiency: { type: Number, default: 0, min: 0, max: 100 },
-    rating: { type: Number, default: 3, min: 1, max: 5 }
-});
 const ShiftInfoSchema = new mongoose_1.Schema({
     shiftType: {
         type: String,
         enum: ['day', 'night', 'rotating', 'on-call'],
-        required: true
+        required: true,
     },
     shiftStartTime: {
         type: String,
         required: true,
-        match: [/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Please enter a valid time format (HH:MM)']
+        validate: {
+            validator: function (v) {
+                return /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/.test(v);
+            },
+            message: 'Invalid time format. Use HH:MM format.'
+        }
     },
     shiftEndTime: {
         type: String,
         required: true,
-        match: [/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Please enter a valid time format (HH:MM)']
+        validate: {
+            validator: function (v) {
+                return /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/.test(v);
+            },
+            message: 'Invalid time format. Use HH:MM format.'
+        }
     },
     workDays: {
         type: [String],
         enum: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
-        default: []
+        required: true,
+        validate: {
+            validator: function (v) {
+                return v.length > 0 && v.length <= 7;
+            },
+            message: 'Must specify at least one work day and maximum seven days.'
+        }
     },
     location: {
         type: String,
         required: true,
         trim: true,
-        maxlength: [100, 'Location cannot exceed 100 characters']
     },
     effectiveDate: {
         type: Date,
-        default: Date.now
-    }
+        default: Date.now,
+    },
 });
 const EmployeeSchema = new mongoose_1.Schema({
     name: {
         type: String,
-        required: [true, 'Employee name is required'],
+        required: [true, 'Name is required'],
         trim: true,
-        maxlength: [100, 'Employee name cannot exceed 100 characters'],
+        maxlength: [100, 'Name cannot exceed 100 characters'],
         index: true,
     },
     email: {
@@ -129,8 +100,8 @@ const EmployeeSchema = new mongoose_1.Schema({
         lowercase: true,
         trim: true,
         match: [
-            /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/,
-            'Please enter a valid email address'
+            /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+            'Please enter a valid email address',
         ],
         index: true,
     },
@@ -139,22 +110,22 @@ const EmployeeSchema = new mongoose_1.Schema({
         required: [true, 'Phone number is required'],
         trim: true,
         match: [
-            /^[\+]?[\d\s\-\(\)]+$/,
-            'Please enter a valid phone number'
+            /^[\+]?[\d\s\-\(\)]{10,20}$/,
+            'Please enter a valid phone number',
         ],
     },
     department: {
         type: String,
         required: [true, 'Department is required'],
         trim: true,
-        maxlength: [100, 'Department name cannot exceed 100 characters'],
+        maxlength: [50, 'Department name cannot exceed 50 characters'],
         index: true,
     },
     role: {
         type: String,
         required: [true, 'Role is required'],
         trim: true,
-        maxlength: [100, 'Role cannot exceed 100 characters'],
+        maxlength: [50, 'Role cannot exceed 50 characters'],
         index: true,
     },
     status: {
@@ -184,14 +155,17 @@ const EmployeeSchema = new mongoose_1.Schema({
         unique: true,
         sparse: true,
         trim: true,
+        index: true,
     },
     joinDate: {
         type: Date,
         default: Date.now,
+        index: true,
     },
     supervisor: {
         type: String,
         trim: true,
+        index: true,
     },
     skills: [{
             type: String,
@@ -210,38 +184,6 @@ const EmployeeSchema = new mongoose_1.Schema({
         type: ShiftInfoSchema,
         default: null,
     },
-    workHistory: {
-        type: [WorkHistorySchema],
-        default: [],
-    },
-    assetAssignments: {
-        type: [AssetAssignmentSchema],
-        default: [],
-    },
-    currentAssignments: [{
-            type: String,
-            trim: true,
-        }],
-    performanceMetrics: {
-        type: PerformanceMetricsSchema,
-        default: () => ({}),
-    },
-    totalWorkHours: {
-        type: Number,
-        default: 0,
-    },
-    productivityScore: {
-        type: Number,
-        default: 0,
-        min: 0,
-        max: 100,
-    },
-    reliabilityScore: {
-        type: Number,
-        default: 0,
-        min: 0,
-        max: 100,
-    },
     accessLevel: {
         type: String,
         enum: ['super_admin', 'department_admin', 'normal_user'],
@@ -250,14 +192,14 @@ const EmployeeSchema = new mongoose_1.Schema({
     },
 }, {
     timestamps: true,
-    versionKey: false,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
 });
-EmployeeSchema.index({ name: 1, status: 1 });
-EmployeeSchema.index({ department: 1, role: 1 });
-EmployeeSchema.index({ email: 1, status: 1 });
-EmployeeSchema.virtual('contactInfo').get(function () {
-    return `${this.name} - ${this.email} (${this.phone})`;
-});
+EmployeeSchema.index({ department: 1, status: 1 });
+EmployeeSchema.index({ role: 1, status: 1 });
+EmployeeSchema.index({ supervisor: 1 });
+EmployeeSchema.index({ 'shiftInfo.shiftType': 1 });
+EmployeeSchema.index({ accessLevel: 1, department: 1 });
 EmployeeSchema.virtual('displayName').get(function () {
     return `${this.name} - ${this.department} (${this.role})`;
 });
@@ -299,5 +241,5 @@ EmployeeSchema.set('toJSON', {
         return ret;
     },
 });
-const Employee = mongoose_1.default.model('Employee', EmployeeSchema);
+const Employee = mongoose_1.default.models.Employee || mongoose_1.default.model('Employee', EmployeeSchema);
 exports.default = Employee;

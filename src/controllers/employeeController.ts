@@ -49,16 +49,17 @@ export class EmployeeController {
 
       // Execute query with pagination
       const [employees, totalCount] = await Promise.all([
-        Employee.find(query)
+        (Employee as any).find(query)
           .sort({ [sortBy as string]: sortDirection })
           .skip(skip)
           .limit(Number(limit))
-          .lean(),
+          .lean()
+          .exec(),
         Employee.countDocuments(query)
       ]);
 
       // Transform for frontend compatibility
-      const transformedEmployees = employees.map(emp => ({
+      const transformedEmployees = employees.map((emp: any) => ({
         id: emp._id.toString(),
         name: emp.name,
         email: emp.email,
@@ -105,7 +106,7 @@ export class EmployeeController {
     try {
       const { id } = req.params;
 
-      const employee = await Employee.findById(id).lean();
+      const employee = await (Employee as any).findById(id).lean().exec();
 
       if (!employee) {
         res.status(404).json({
@@ -187,9 +188,9 @@ export class EmployeeController {
       }
 
       // Check if employee email already exists
-      const existingEmployee = await Employee.findOne({ 
+      const existingEmployee = await (Employee as any).findOne({ 
         email: email.toLowerCase() 
-      });
+      }).exec();
 
       if (existingEmployee) {
         res.status(409).json({
@@ -285,7 +286,7 @@ export class EmployeeController {
       const updates = req.body;
 
       // Check if employee exists
-      const existingEmployee = await Employee.findById(id);
+      const existingEmployee = await (Employee as any).findById(id).exec();
       if (!existingEmployee) {
         res.status(404).json({
           success: false,
@@ -296,10 +297,10 @@ export class EmployeeController {
 
       // If email is being updated, check for duplicates
       if (updates.email && updates.email.toLowerCase() !== existingEmployee.email) {
-        const duplicateEmployee = await Employee.findOne({
+        const duplicateEmployee = await (Employee as any).findOne({
           email: updates.email.toLowerCase(),
           _id: { $ne: id }
-        });
+        }).exec();
 
         if (duplicateEmployee) {
           res.status(409).json({
@@ -324,11 +325,11 @@ export class EmployeeController {
         updatedEmployee = savedEmployee.toObject();
       } else {
         // For non-password updates, use findByIdAndUpdate
-        updatedEmployee = await Employee.findByIdAndUpdate(
+        updatedEmployee = await (Employee as any).findByIdAndUpdate(
           id,
           { $set: updates },
           { new: true, runValidators: true }
-        ).lean();
+        ).lean().exec();
       }
 
       if (!updatedEmployee) {
@@ -382,7 +383,7 @@ export class EmployeeController {
     try {
       const { id } = req.params;
 
-      const deletedEmployee = await Employee.findByIdAndDelete(id);
+      const deletedEmployee = await (Employee as any).findByIdAndDelete(id).exec();
 
       if (!deletedEmployee) {
         res.status(404).json({
@@ -424,7 +425,7 @@ export class EmployeeController {
         return;
       }
 
-      const employee = await Employee.findById(id).lean();
+      const employee = await (Employee as any).findById(id).lean().exec();
 
       if (!employee) {
         res.status(404).json({
@@ -499,7 +500,7 @@ export class EmployeeController {
         return;
       }
 
-      const employee = await Employee.findById(id);
+      const employee = await (Employee as any).findById(id).exec();
 
       if (!employee) {
         res.status(404).json({
@@ -541,7 +542,7 @@ export class EmployeeController {
         return;
       }
 
-      const employee = await Employee.findById(id);
+      const employee = await (Employee as any).findById(id).exec();
 
       if (!employee) {
         res.status(404).json({
@@ -743,7 +744,7 @@ export class EmployeeController {
 
       const averageCompletionTime = totalTasksCompleted > 0 ? totalDuration / totalTasksCompleted : 0;
 
-      const lastActivityDate = workHistory.length > 0 && workHistory[0] ? new Date(workHistory[0].date) : undefined;
+      const lastActivityDate = workHistory.length > 0 && workHistory[0] ? new Date(workHistory[0].date) : new Date();
 
       // Calculate efficiency based on completion rate
       const efficiency = workHistory.length > 0 ? (totalTasksCompleted / workHistory.length) * 100 : 0;
@@ -906,7 +907,7 @@ export class EmployeeController {
     };
 
     workHistory.forEach(item => {
-      distribution[item.type]++;
+      (distribution as any)[item.type]++;
     });
 
     return Object.entries(distribution).map(([type, count]) => ({
@@ -1027,16 +1028,17 @@ export class EmployeeController {
 
       // Execute query with pagination
       const [employees, totalCount] = await Promise.all([
-        Employee.find(query)
+        (Employee as any).find(query)
           .sort({ [sortBy as string]: sortDirection })
           .skip(skip)
           .limit(Number(limit))
-          .lean(),
+          .lean()
+          .exec(),
         Employee.countDocuments(query)
       ]);
 
       // Transform to shift details format for compatibility
-      const transformedShiftDetails = employees.map(emp => ({
+      const transformedShiftDetails = employees.map((emp: any) => ({
         id: emp.employeeId || emp._id.toString(),
         employeeId: emp.employeeId || emp._id.toString(),
         employeeName: emp.name,

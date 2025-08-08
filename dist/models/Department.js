@@ -39,21 +39,27 @@ const DepartmentSchema = new mongoose_1.Schema({
         type: String,
         required: [true, 'Department name is required'],
         trim: true,
-        maxlength: [100, 'Department name cannot exceed 100 characters'],
+        maxlength: [50, 'Department name cannot exceed 50 characters'],
+        unique: true,
+        index: true,
+    },
+    code: {
+        type: String,
+        required: [true, 'Department code is required'],
+        trim: true,
+        maxlength: [10, 'Department code cannot exceed 10 characters'],
         unique: true,
         index: true,
     },
     description: {
         type: String,
-        required: [true, 'Department description is required'],
         trim: true,
-        maxlength: [500, 'Description cannot exceed 500 characters'],
+        maxlength: [200, 'Description cannot exceed 200 characters'],
     },
     manager: {
         type: String,
-        required: [true, 'Manager name is required'],
         trim: true,
-        maxlength: [100, 'Manager name cannot exceed 100 characters'],
+        index: true,
     },
     employeeCount: {
         type: Number,
@@ -64,29 +70,18 @@ const DepartmentSchema = new mongoose_1.Schema({
         type: String,
         enum: {
             values: ['active', 'inactive'],
-            message: 'Status must be either active or inactive',
+            message: 'Status must be active or inactive',
         },
         default: 'active',
         index: true,
     },
 }, {
     timestamps: true,
-    versionKey: false,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
 });
 DepartmentSchema.index({ name: 1, status: 1 });
-DepartmentSchema.index({ manager: 1 });
-DepartmentSchema.virtual('displayInfo').get(function () {
-    return `${this.name} - ${this.manager} (${this.employeeCount} employees)`;
-});
-DepartmentSchema.pre('save', function (next) {
-    if (this.name) {
-        this.name = this.name.charAt(0).toUpperCase() + this.name.slice(1);
-    }
-    if (this.manager) {
-        this.manager = this.manager.charAt(0).toUpperCase() + this.manager.slice(1);
-    }
-    next();
-});
+DepartmentSchema.index({ code: 1, status: 1 });
 DepartmentSchema.set('toJSON', {
     transform: function (doc, ret) {
         ret.id = ret._id;
@@ -95,5 +90,5 @@ DepartmentSchema.set('toJSON', {
         return ret;
     },
 });
-const Department = mongoose_1.default.model('Department', DepartmentSchema);
+const Department = mongoose_1.default.models.Department || mongoose_1.default.model('Department', DepartmentSchema);
 exports.default = Department;

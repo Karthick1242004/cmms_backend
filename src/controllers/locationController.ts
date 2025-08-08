@@ -20,7 +20,7 @@ export class LocationController {
       // Build query
       const query: any = {};
       
-      if (status && status !== 'all') {
+      if (status && status !== 'all') { 
         query.status = status;
       }
 

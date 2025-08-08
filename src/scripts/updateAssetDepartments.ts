@@ -10,7 +10,7 @@ const updateAssetDepartments = async () => {
     await db.connect();
 
     // Get all departments
-    const departments = await Department.find({});
+    const departments = await (Department as any).find({});
     console.log(`📊 Found ${departments.length} departments`);
 
     if (departments.length === 0) {
@@ -52,7 +52,7 @@ const updateAssetDepartments = async () => {
       
       // If no mapping found, assign to the first available department
       if (!assignedDepartment) {
-        const availableDept = departments.find(d => d.name === 'Maintenance') || departments[0];
+        const availableDept = departments.find((d: any) => d.name === 'Maintenance') || departments[0];
         if (availableDept) {
           assignedDepartment = availableDept.name;
         } else {
@@ -62,7 +62,7 @@ const updateAssetDepartments = async () => {
       }
 
       // Find the department in our list to ensure it exists
-      const dept = departments.find(d => d.name === assignedDepartment);
+      const dept = departments.find((d: any) => d.name === assignedDepartment);
       if (dept) {
         await Asset.findByIdAndUpdate(asset._id, {
           department: dept.name

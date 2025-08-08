@@ -34,27 +34,64 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importStar(require("mongoose"));
-const TicketSchema = new mongoose_1.Schema({
-    title: {
+const PartUsageSchema = new mongoose_1.Schema({
+    partId: {
         type: String,
-        required: [true, 'Ticket title is required'],
+        required: true,
         trim: true,
-        maxlength: [100, 'Title cannot exceed 100 characters'],
+    },
+    partName: {
+        type: String,
+        required: true,
+        trim: true,
+    },
+    quantity: {
+        type: Number,
+        required: true,
+        min: [1, 'Quantity must be at least 1'],
+    },
+    cost: {
+        type: Number,
+        required: true,
+        min: [0, 'Cost cannot be negative'],
+    },
+});
+const MaintenanceSchema = new mongoose_1.Schema({
+    assetId: {
+        type: String,
+        required: [true, 'Asset ID is required'],
+        trim: true,
         index: true,
     },
-    description: {
+    assetName: {
         type: String,
-        required: [true, 'Ticket description is required'],
+        required: [true, 'Asset name is required'],
         trim: true,
-        maxlength: [1000, 'Description cannot exceed 1000 characters'],
+        maxlength: [100, 'Asset name cannot exceed 100 characters'],
+    },
+    department: {
+        type: String,
+        required: [true, 'Department is required'],
+        trim: true,
+        maxlength: [50, 'Department cannot exceed 50 characters'],
+        index: true,
+    },
+    type: {
+        type: String,
+        enum: {
+            values: ['preventive', 'corrective', 'emergency', 'scheduled'],
+            message: 'Type must be preventive, corrective, emergency, or scheduled',
+        },
+        required: [true, 'Maintenance type is required'],
+        index: true,
     },
     status: {
         type: String,
         enum: {
-            values: ['open', 'in-progress', 'pending', 'completed', 'cancelled'],
-            message: 'Status must be open, in-progress, pending, completed, or cancelled',
+            values: ['scheduled', 'in-progress', 'completed', 'cancelled', 'overdue'],
+            message: 'Status must be scheduled, in-progress, completed, cancelled, or overdue',
         },
-        default: 'open',
+        default: 'scheduled',
         index: true,
     },
     priority: {
@@ -66,19 +103,18 @@ const TicketSchema = new mongoose_1.Schema({
         default: 'medium',
         index: true,
     },
-    category: {
+    title: {
         type: String,
-        required: [true, 'Category is required'],
+        required: [true, 'Maintenance title is required'],
         trim: true,
-        maxlength: [50, 'Category cannot exceed 50 characters'],
+        maxlength: [100, 'Title cannot exceed 100 characters'],
         index: true,
     },
-    department: {
+    description: {
         type: String,
-        required: [true, 'Department is required'],
+        required: [true, 'Description is required'],
         trim: true,
-        maxlength: [50, 'Department cannot exceed 50 characters'],
-        index: true,
+        maxlength: [1000, 'Description cannot exceed 1000 characters'],
     },
     assignedTo: {
         type: String,
@@ -91,15 +127,16 @@ const TicketSchema = new mongoose_1.Schema({
         trim: true,
         index: true,
     },
-    assetId: {
-        type: String,
-        trim: true,
+    scheduledDate: {
+        type: Date,
+        required: [true, 'Scheduled date is required'],
         index: true,
     },
-    location: {
-        type: String,
-        trim: true,
-        maxlength: [100, 'Location cannot exceed 100 characters'],
+    startDate: {
+        type: Date,
+    },
+    completedDate: {
+        type: Date,
     },
     estimatedHours: {
         type: Number,
@@ -109,36 +146,32 @@ const TicketSchema = new mongoose_1.Schema({
         type: Number,
         min: [0, 'Actual hours cannot be negative'],
     },
-    startDate: {
-        type: Date,
+    cost: {
+        type: Number,
+        min: [0, 'Cost cannot be negative'],
     },
-    dueDate: {
-        type: Date,
-    },
-    completedDate: {
-        type: Date,
-    },
-    attachments: [{
-            type: String,
-            trim: true,
-        }],
+    parts: [PartUsageSchema],
     notes: {
         type: String,
         trim: true,
         maxlength: [2000, 'Notes cannot exceed 2000 characters'],
     },
+    attachments: [{
+            type: String,
+            trim: true,
+        }],
 }, {
     timestamps: true,
     toJSON: { virtuals: true },
     toObject: { virtuals: true },
 });
-TicketSchema.index({ status: 1, priority: 1 });
-TicketSchema.index({ department: 1, status: 1 });
-TicketSchema.index({ assignedTo: 1, status: 1 });
-TicketSchema.index({ createdBy: 1 });
-TicketSchema.index({ assetId: 1 });
-TicketSchema.index({ dueDate: 1, status: 1 });
-TicketSchema.set('toJSON', {
+MaintenanceSchema.index({ status: 1, priority: 1 });
+MaintenanceSchema.index({ department: 1, status: 1 });
+MaintenanceSchema.index({ assignedTo: 1, status: 1 });
+MaintenanceSchema.index({ assetId: 1 });
+MaintenanceSchema.index({ scheduledDate: 1, status: 1 });
+MaintenanceSchema.index({ type: 1, status: 1 });
+MaintenanceSchema.set('toJSON', {
     transform: function (doc, ret) {
         ret.id = ret._id;
         delete ret._id;
@@ -146,5 +179,5 @@ TicketSchema.set('toJSON', {
         return ret;
     },
 });
-const Ticket = mongoose_1.default.models.Ticket || mongoose_1.default.model('Ticket', TicketSchema);
-exports.default = Ticket;
+const Maintenance = mongoose_1.default.models.Maintenance || mongoose_1.default.model('Maintenance', MaintenanceSchema);
+exports.default = Maintenance;

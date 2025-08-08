@@ -186,7 +186,7 @@ export const createDailyLogActivity = async (req: AuthenticatedRequest, res: Res
     const user = req.user;
 
     // Validate that the department exists
-    const department = await Department.findOne({ 
+    const department = await (Department as any).findOne({ 
       $or: [
         { _id: activityData.departmentId },
         { name: activityData.departmentName }
@@ -216,7 +216,7 @@ export const createDailyLogActivity = async (req: AuthenticatedRequest, res: Res
     }
 
     // Validate that the employee exists
-    const employee = await Employee.findOne({ _id: activityData.attendedBy });
+    const employee = await (Employee as any).findOne({ _id: activityData.attendedBy });
     if (!employee) {
       res.status(400).json({
         success: false,
@@ -227,7 +227,7 @@ export const createDailyLogActivity = async (req: AuthenticatedRequest, res: Res
 
     // Validate verifiedBy if provided
     if (activityData.verifiedBy) {
-      const verifier = await Employee.findOne({ _id: activityData.verifiedBy });
+      const verifier = await (Employee as any).findOne({ _id: activityData.verifiedBy });
       if (!verifier) {
         res.status(400).json({
           success: false,
@@ -306,7 +306,7 @@ export const updateDailyLogActivity = async (req: AuthenticatedRequest, res: Res
 
     // Validate department if being updated
     if (updates.departmentId || updates.departmentName) {
-      const department = await Department.findOne({ 
+      const department = await (Department as any).findOne({ 
         $or: [
           { _id: updates.departmentId },
           { name: updates.departmentName }
@@ -345,7 +345,7 @@ export const updateDailyLogActivity = async (req: AuthenticatedRequest, res: Res
 
     // Validate attendedBy if being updated
     if (updates.attendedBy) {
-      const employee = await Employee.findOne({ _id: updates.attendedBy });
+      const employee = await (Employee as any).findOne({ _id: updates.attendedBy });
       if (!employee) {
         res.status(400).json({
           success: false,
@@ -358,7 +358,7 @@ export const updateDailyLogActivity = async (req: AuthenticatedRequest, res: Res
 
     // Validate verifiedBy if being updated
     if (updates.verifiedBy) {
-      const verifier = await Employee.findOne({ _id: updates.verifiedBy });
+      const verifier = await (Employee as any).findOne({ _id: updates.verifiedBy });
       if (!verifier) {
         res.status(400).json({
           success: false,
@@ -475,7 +475,7 @@ export const updateDailyLogActivityStatus = async (req: AuthenticatedRequest, re
       }
 
       // Validate verifier exists
-      const verifier = await Employee.findOne({ _id: verifiedBy });
+      const verifier = await (Employee as any).findOne({ _id: verifiedBy });
       if (!verifier) {
         res.status(400).json({
           success: false,
@@ -629,7 +629,7 @@ export const getAssetsByDepartment = async (req: Request, res: Response): Promis
     const { departmentId } = req.params;
 
     // Find department
-    const department = await Department.findById(departmentId);
+    const department = await (Department as any).findById(departmentId);
     if (!department) {
       res.status(404).json({
         success: false,
