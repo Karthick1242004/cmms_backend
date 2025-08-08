@@ -106,7 +106,26 @@ export class EmployeeController {
     try {
       const { id } = req.params;
 
-      const employee = await (Employee as any).findById(id).lean().exec();
+      // Validate ID parameter
+      if (!id) {
+        res.status(400).json({
+          success: false,
+          message: 'Employee ID is required'
+        });
+        return;
+      }
+
+      // Find employee by MongoDB _id or custom employeeId
+      const mongoIdRegex = /^[0-9a-fA-F]{24}$/;
+      let employee;
+      
+      if (mongoIdRegex.test(id)) {
+        // Search by MongoDB ObjectId
+        employee = await (Employee as any).findById(id).lean().exec();
+      } else {
+        // Search by custom employeeId
+        employee = await (Employee as any).findOne({ employeeId: id }).lean().exec();
+      }
 
       if (!employee) {
         res.status(404).json({
@@ -285,8 +304,26 @@ export class EmployeeController {
       const { id } = req.params;
       const updates = req.body;
 
-      // Check if employee exists
-      const existingEmployee = await (Employee as any).findById(id).exec();
+      // Validate ID parameter
+      if (!id) {
+        res.status(400).json({
+          success: false,
+          message: 'Employee ID is required'
+        });
+        return;
+      }
+
+      // Check if employee exists (by MongoDB _id or custom employeeId)
+      const mongoIdRegex = /^[0-9a-fA-F]{24}$/;
+      let existingEmployee;
+      
+      if (mongoIdRegex.test(id)) {
+        // Search by MongoDB ObjectId
+        existingEmployee = await (Employee as any).findById(id).exec();
+      } else {
+        // Search by custom employeeId
+        existingEmployee = await (Employee as any).findOne({ employeeId: id }).exec();
+      }
       if (!existingEmployee) {
         res.status(404).json({
           success: false,
@@ -297,10 +334,22 @@ export class EmployeeController {
 
       // If email is being updated, check for duplicates
       if (updates.email && updates.email.toLowerCase() !== existingEmployee.email) {
-        const duplicateEmployee = await (Employee as any).findOne({
-          email: updates.email.toLowerCase(),
-          _id: { $ne: id }
-        }).exec();
+        let duplicateQuery;
+        if (mongoIdRegex.test(id!)) {
+          // Exclude by MongoDB ObjectId
+          duplicateQuery = {
+            email: updates.email.toLowerCase(),
+            _id: { $ne: id }
+          };
+        } else {
+          // Exclude by custom employeeId
+          duplicateQuery = {
+            email: updates.email.toLowerCase(),
+            employeeId: { $ne: id }
+          };
+        }
+        
+        const duplicateEmployee = await (Employee as any).findOne(duplicateQuery).exec();
 
         if (duplicateEmployee) {
           res.status(409).json({
@@ -324,12 +373,22 @@ export class EmployeeController {
         const savedEmployee = await existingEmployee.save();
         updatedEmployee = savedEmployee.toObject();
       } else {
-        // For non-password updates, use findByIdAndUpdate
-        updatedEmployee = await (Employee as any).findByIdAndUpdate(
-          id,
-          { $set: updates },
-          { new: true, runValidators: true }
-        ).lean().exec();
+        // For non-password updates, use appropriate update method based on ID type
+        if (mongoIdRegex.test(id!)) {
+          // Update by MongoDB ObjectId
+          updatedEmployee = await (Employee as any).findByIdAndUpdate(
+            id,
+            { $set: updates },
+            { new: true, runValidators: true }
+          ).lean().exec();
+        } else {
+          // Update by custom employeeId
+          updatedEmployee = await (Employee as any).findOneAndUpdate(
+            { employeeId: id },
+            { $set: updates },
+            { new: true, runValidators: true }
+          ).lean().exec();
+        }
       }
 
       if (!updatedEmployee) {
