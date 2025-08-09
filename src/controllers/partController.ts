@@ -327,6 +327,381 @@ export class PartController {
     }
   }
 
+  // Create new part
+  static async createPart(req: AuthenticatedRequest, res: Response): Promise<void> {
+    try {
+      const {
+        partNumber,
+        name,
+        sku,
+        materialCode,
+        description,
+        category,
+        department,
+        quantity = 0,
+        minStockLevel = 0,
+        unitPrice = 0,
+        supplier,
+        location,
+        isStockItem = true,
+        isCritical = false
+      } = req.body;
+
+      // Validate required fields
+      if (!partNumber || !name || !sku || !materialCode || !category || !department || !supplier || !location) {
+        res.status(400).json({
+          success: false,
+          message: 'All required fields must be provided: partNumber, name, sku, materialCode, category, department, supplier, location'
+        });
+        return;
+      }
+
+      // Check for duplicate part number or SKU
+      const existingPart = await Part.findOne({
+        $or: [
+          { partNumber: partNumber },
+          { sku: sku }
+        ]
+      });
+
+      if (existingPart) {
+        const field = existingPart.partNumber === partNumber ? 'part number' : 'SKU';
+        res.status(409).json({
+          success: false,
+          message: `A part with this ${field} already exists`
+        });
+        return;
+      }
+
+      // Check access permissions
+      const userDepartment = req.user?.department;
+      const userRole = req.user?.role;
+      
+      if (userRole !== 'admin' && department !== userDepartment) {
+        res.status(403).json({
+          success: false,
+          message: 'You can only create parts for your own department'
+        });
+        return;
+      }
+
+      // Create new part
+      const totalValue = quantity * unitPrice;
+      const newPart = new Part({
+        partNumber,
+        name,
+        sku,
+        materialCode,
+        description,
+        category,
+        department,
+        linkedAssets: [], // Start with no linked assets
+        quantity: Number(quantity),
+        minStockLevel: Number(minStockLevel),
+        unitPrice: Number(unitPrice),
+        totalValue,
+        supplier,
+        location,
+        alternativeLocations: [],
+        totalConsumed: 0,
+        averageMonthlyUsage: 0,
+        status: 'active',
+        isStockItem: Boolean(isStockItem),
+        isCritical: Boolean(isCritical)
+      });
+
+      const savedPart = await newPart.save();
+
+      // Transform for response
+      const transformedPart = {
+        id: savedPart._id.toString(),
+        partNumber: savedPart.partNumber,
+        name: savedPart.name,
+        sku: savedPart.sku,
+        materialCode: savedPart.materialCode,
+        description: savedPart.description,
+        category: savedPart.category,
+        department: savedPart.department,
+        linkedAssets: savedPart.linkedAssets || [],
+        quantity: savedPart.quantity,
+        minStockLevel: savedPart.minStockLevel,
+        unitPrice: savedPart.unitPrice,
+        totalValue: savedPart.totalValue,
+        supplier: savedPart.supplier,
+        location: savedPart.location,
+        alternativeLocations: savedPart.alternativeLocations || [],
+        totalConsumed: savedPart.totalConsumed,
+        averageMonthlyUsage: savedPart.averageMonthlyUsage,
+        lastUsedDate: savedPart.lastUsedDate,
+        status: savedPart.status,
+        isStockItem: savedPart.isStockItem,
+        isCritical: savedPart.isCritical,
+        stockStatus: savedPart.quantity <= 0 ? 'out_of_stock' : 
+                    savedPart.quantity <= savedPart.minStockLevel ? 'low_stock' : 'in_stock',
+        departmentsServed: [],
+        createdAt: savedPart.createdAt,
+        updatedAt: savedPart.updatedAt
+      };
+
+      res.status(201).json({
+        success: true,
+        data: transformedPart,
+        message: 'Part created successfully'
+      });
+    } catch (error: any) {
+      console.error('Error creating part:', error);
+      
+      if (error.code === 11000) {
+        // Handle duplicate key error
+        const field = error.keyPattern?.partNumber ? 'part number' : 
+                     error.keyPattern?.sku ? 'SKU' : 'field';
+        res.status(409).json({
+          success: false,
+          message: `A part with this ${field} already exists`
+        });
+        return;
+      }
+
+      if (error.name === 'ValidationError') {
+        const validationErrors = Object.values(error.errors).map((err: any) => err.message);
+        res.status(400).json({
+          success: false,
+          message: 'Validation error',
+          errors: validationErrors
+        });
+        return;
+      }
+
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error while creating part',
+        error: process.env.NODE_ENV === 'development' ? error : undefined
+      });
+    }
+  }
+
+  // Update existing part
+  static async updatePart(req: AuthenticatedRequest, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      const updateData = req.body;
+
+      if (!id || !Types.ObjectId.isValid(id)) {
+        res.status(400).json({
+          success: false,
+          message: 'Invalid part ID format'
+        });
+        return;
+      }
+
+      // Find existing part
+      const existingPart = await Part.findById(id);
+      if (!existingPart) {
+        res.status(404).json({
+          success: false,
+          message: 'Part not found'
+        });
+        return;
+      }
+
+      // Check access permissions
+      const userDepartment = req.user?.department;
+      const userRole = req.user?.role;
+      
+      if (userRole !== 'admin') {
+        const hasAccess = existingPart.department === userDepartment || 
+                         existingPart.linkedAssets?.some((asset: any) => asset.assetDepartment === userDepartment);
+        
+        if (!hasAccess) {
+          res.status(403).json({
+            success: false,
+            message: 'Access denied to update this part'
+          });
+          return;
+        }
+
+        // Non-admin users cannot change department
+        if (updateData.department && updateData.department !== existingPart.department) {
+          res.status(403).json({
+            success: false,
+            message: 'You cannot change the department of this part'
+          });
+          return;
+        }
+      }
+
+      // Check for duplicate part number or SKU (excluding current part)
+      if (updateData.partNumber || updateData.sku) {
+        const duplicateQuery: any = {
+          _id: { $ne: id }
+        };
+        
+        const orConditions = [];
+        if (updateData.partNumber) orConditions.push({ partNumber: updateData.partNumber });
+        if (updateData.sku) orConditions.push({ sku: updateData.sku });
+        
+        if (orConditions.length > 0) {
+          duplicateQuery.$or = orConditions;
+          
+          const duplicatePart = await Part.findOne(duplicateQuery);
+          if (duplicatePart) {
+            const field = duplicatePart.partNumber === updateData.partNumber ? 'part number' : 'SKU';
+            res.status(409).json({
+              success: false,
+              message: `A part with this ${field} already exists`
+            });
+            return;
+          }
+        }
+      }
+
+      // Calculate totalValue if quantity or unitPrice changed
+      if (updateData.quantity !== undefined || updateData.unitPrice !== undefined) {
+        const newQuantity = updateData.quantity !== undefined ? Number(updateData.quantity) : existingPart.quantity;
+        const newUnitPrice = updateData.unitPrice !== undefined ? Number(updateData.unitPrice) : existingPart.unitPrice;
+        updateData.totalValue = newQuantity * newUnitPrice;
+      }
+
+      // Update the part
+      const updatedPart = await Part.findByIdAndUpdate(
+        id,
+        updateData,
+        { new: true, runValidators: true }
+      );
+
+      if (!updatedPart) {
+        res.status(404).json({
+          success: false,
+          message: 'Part not found after update'
+        });
+        return;
+      }
+
+      // Transform for response
+      const transformedPart = {
+        id: updatedPart._id.toString(),
+        partNumber: updatedPart.partNumber,
+        name: updatedPart.name,
+        sku: updatedPart.sku,
+        materialCode: updatedPart.materialCode,
+        description: updatedPart.description,
+        category: updatedPart.category,
+        department: updatedPart.department,
+        linkedAssets: updatedPart.linkedAssets || [],
+        quantity: updatedPart.quantity,
+        minStockLevel: updatedPart.minStockLevel,
+        unitPrice: updatedPart.unitPrice,
+        totalValue: updatedPart.totalValue,
+        supplier: updatedPart.supplier,
+        location: updatedPart.location,
+        alternativeLocations: updatedPart.alternativeLocations || [],
+        totalConsumed: updatedPart.totalConsumed,
+        averageMonthlyUsage: updatedPart.averageMonthlyUsage,
+        lastUsedDate: updatedPart.lastUsedDate,
+        status: updatedPart.status,
+        isStockItem: updatedPart.isStockItem,
+        isCritical: updatedPart.isCritical,
+        stockStatus: updatedPart.quantity <= 0 ? 'out_of_stock' : 
+                    updatedPart.quantity <= updatedPart.minStockLevel ? 'low_stock' : 'in_stock',
+        departmentsServed: [...new Set((updatedPart.linkedAssets || []).map((asset: any) => asset.assetDepartment))],
+        createdAt: updatedPart.createdAt,
+        updatedAt: updatedPart.updatedAt
+      };
+
+      res.status(200).json({
+        success: true,
+        data: transformedPart,
+        message: 'Part updated successfully'
+      });
+    } catch (error: any) {
+      console.error('Error updating part:', error);
+      
+      if (error.code === 11000) {
+        // Handle duplicate key error
+        const field = error.keyPattern?.partNumber ? 'part number' : 
+                     error.keyPattern?.sku ? 'SKU' : 'field';
+        res.status(409).json({
+          success: false,
+          message: `A part with this ${field} already exists`
+        });
+        return;
+      }
+
+      if (error.name === 'ValidationError') {
+        const validationErrors = Object.values(error.errors).map((err: any) => err.message);
+        res.status(400).json({
+          success: false,
+          message: 'Validation error',
+          errors: validationErrors
+        });
+        return;
+      }
+
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error while updating part',
+        error: process.env.NODE_ENV === 'development' ? error : undefined
+      });
+    }
+  }
+
+  // Delete part
+  static async deletePart(req: AuthenticatedRequest, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+
+      if (!id || !Types.ObjectId.isValid(id)) {
+        res.status(400).json({
+          success: false,
+          message: 'Invalid part ID format'
+        });
+        return;
+      }
+
+      // Find existing part
+      const existingPart = await Part.findById(id);
+      if (!existingPart) {
+        res.status(404).json({
+          success: false,
+          message: 'Part not found'
+        });
+        return;
+      }
+
+      // Check access permissions
+      const userDepartment = req.user?.department;
+      const userRole = req.user?.role;
+      
+      if (userRole !== 'admin') {
+        const hasAccess = existingPart.department === userDepartment || 
+                         existingPart.linkedAssets?.some((asset: any) => asset.assetDepartment === userDepartment);
+        
+        if (!hasAccess) {
+          res.status(403).json({
+            success: false,
+            message: 'Access denied to delete this part'
+          });
+          return;
+        }
+      }
+
+      // Soft delete by setting status to inactive
+      await Part.findByIdAndUpdate(id, { status: 'discontinued' });
+
+      res.status(200).json({
+        success: true,
+        message: 'Part deleted successfully'
+      });
+    } catch (error: any) {
+      console.error('Error deleting part:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error while deleting part',
+        error: process.env.NODE_ENV === 'development' ? error : undefined
+      });
+    }
+  }
+
   // Sync parts from assets (utility function)
   static async syncPartsFromAssets(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {

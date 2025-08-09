@@ -85,7 +85,21 @@ class EmployeeController {
     static async getEmployeeById(req, res) {
         try {
             const { id } = req.params;
-            const employee = await Employee_1.default.findById(id).lean().exec();
+            if (!id) {
+                res.status(400).json({
+                    success: false,
+                    message: 'Employee ID is required'
+                });
+                return;
+            }
+            const mongoIdRegex = /^[0-9a-fA-F]{24}$/;
+            let employee;
+            if (mongoIdRegex.test(id)) {
+                employee = await Employee_1.default.findById(id).lean().exec();
+            }
+            else {
+                employee = await Employee_1.default.findOne({ employeeId: id }).lean().exec();
+            }
             if (!employee) {
                 res.status(404).json({
                     success: false,
@@ -223,7 +237,21 @@ class EmployeeController {
             }
             const { id } = req.params;
             const updates = req.body;
-            const existingEmployee = await Employee_1.default.findById(id).exec();
+            if (!id) {
+                res.status(400).json({
+                    success: false,
+                    message: 'Employee ID is required'
+                });
+                return;
+            }
+            const mongoIdRegex = /^[0-9a-fA-F]{24}$/;
+            let existingEmployee;
+            if (mongoIdRegex.test(id)) {
+                existingEmployee = await Employee_1.default.findById(id).exec();
+            }
+            else {
+                existingEmployee = await Employee_1.default.findOne({ employeeId: id }).exec();
+            }
             if (!existingEmployee) {
                 res.status(404).json({
                     success: false,
@@ -232,10 +260,20 @@ class EmployeeController {
                 return;
             }
             if (updates.email && updates.email.toLowerCase() !== existingEmployee.email) {
-                const duplicateEmployee = await Employee_1.default.findOne({
-                    email: updates.email.toLowerCase(),
-                    _id: { $ne: id }
-                }).exec();
+                let duplicateQuery;
+                if (mongoIdRegex.test(id)) {
+                    duplicateQuery = {
+                        email: updates.email.toLowerCase(),
+                        _id: { $ne: id }
+                    };
+                }
+                else {
+                    duplicateQuery = {
+                        email: updates.email.toLowerCase(),
+                        employeeId: { $ne: id }
+                    };
+                }
+                const duplicateEmployee = await Employee_1.default.findOne(duplicateQuery).exec();
                 if (duplicateEmployee) {
                     res.status(409).json({
                         success: false,
@@ -254,7 +292,12 @@ class EmployeeController {
                 updatedEmployee = savedEmployee.toObject();
             }
             else {
-                updatedEmployee = await Employee_1.default.findByIdAndUpdate(id, { $set: updates }, { new: true, runValidators: true }).lean().exec();
+                if (mongoIdRegex.test(id)) {
+                    updatedEmployee = await Employee_1.default.findByIdAndUpdate(id, { $set: updates }, { new: true, runValidators: true }).lean().exec();
+                }
+                else {
+                    updatedEmployee = await Employee_1.default.findOneAndUpdate({ employeeId: id }, { $set: updates }, { new: true, runValidators: true }).lean().exec();
+                }
             }
             if (!updatedEmployee) {
                 res.status(404).json({

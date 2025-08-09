@@ -35,6 +35,7 @@ class DepartmentController {
             const transformedDepartments = departments.map((dept) => ({
                 id: dept._id.toString(),
                 name: dept.name,
+                code: dept.code,
                 description: dept.description,
                 manager: dept.manager,
                 employeeCount: dept.employeeCount,
@@ -80,6 +81,7 @@ class DepartmentController {
             const transformedDepartment = {
                 id: department._id.toString(),
                 name: department.name,
+                code: department.code,
                 description: department.description,
                 manager: department.manager,
                 employeeCount: department.employeeCount,
@@ -113,7 +115,7 @@ class DepartmentController {
                 });
                 return;
             }
-            const { name, description, manager, employeeCount = 0, status = 'active' } = req.body;
+            const { name, code, description, manager, employeeCount = 0, status = 'active' } = req.body;
             const existingDepartment = await Department_1.default.findOne({
                 name: { $regex: new RegExp(`^${name}$`, 'i') }
             }).exec();
@@ -126,6 +128,7 @@ class DepartmentController {
             }
             const department = new Department_1.default({
                 name,
+                code,
                 description,
                 manager,
                 employeeCount,
@@ -135,6 +138,7 @@ class DepartmentController {
             const transformedDepartment = {
                 id: savedDepartment._id.toString(),
                 name: savedDepartment.name,
+                code: savedDepartment.code,
                 description: savedDepartment.description,
                 manager: savedDepartment.manager,
                 employeeCount: savedDepartment.employeeCount,
