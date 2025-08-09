@@ -19,6 +19,7 @@ import dailyLogActivityRoutes from './routes/dailyLogActivityRoutes';
 import noticeBoardRoutes from './routes/noticeBoardRoutes';
 import locationRoutes from './routes/locationRoutes';
 import partRoutes from './routes/partRoutes';
+import chatRoutes from './routes/chatRoutes';
 
 // Load environment variables
 dotenv.config();
@@ -249,6 +250,7 @@ app.use('/api/daily-log-activities', dailyLogActivityRoutes);
 app.use('/api/notice-board', noticeBoardRoutes);
 app.use('/api/locations', locationRoutes);
 app.use('/api/parts', partRoutes);
+app.use('/api/chat', chatRoutes);
 
 // Root endpoint
 app.get('/', (req: Request, res: Response): void => {
@@ -271,6 +273,8 @@ app.get('/', (req: Request, res: Response): void => {
         daily_log_activities: '/api/daily-log-activities',
         notice_board: '/api/notice-board',
         locations: '/api/locations',
+        parts: '/api/parts',
+        chat: '/api/chat',
         database_info: '/api/database/info'
       }
   });
