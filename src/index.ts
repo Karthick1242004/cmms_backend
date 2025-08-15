@@ -20,6 +20,7 @@ import noticeBoardRoutes from './routes/noticeBoardRoutes';
 import locationRoutes from './routes/locationRoutes';
 import partRoutes from './routes/partRoutes';
 import chatRoutes from './routes/chatRoutes';
+import profileRoutes from './routes/profileRoutes';
 
 // Load environment variables
 dotenv.config();
@@ -251,6 +252,7 @@ app.use('/api/notice-board', noticeBoardRoutes);
 app.use('/api/locations', locationRoutes);
 app.use('/api/parts', partRoutes);
 app.use('/api/chat', chatRoutes);
+app.use('/api/profile', profileRoutes);
 
 // Root endpoint
 app.get('/', (req: Request, res: Response): void => {

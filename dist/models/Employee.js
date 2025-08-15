@@ -190,6 +190,41 @@ const EmployeeSchema = new mongoose_1.Schema({
         default: 'normal_user',
         index: true,
     },
+    firstName: {
+        type: String,
+        trim: true,
+        maxlength: [50, 'First name cannot exceed 50 characters'],
+    },
+    lastName: {
+        type: String,
+        trim: true,
+        maxlength: [50, 'Last name cannot exceed 50 characters'],
+    },
+    address: {
+        type: String,
+        trim: true,
+        maxlength: [200, 'Address cannot exceed 200 characters'],
+    },
+    city: {
+        type: String,
+        trim: true,
+        maxlength: [50, 'City cannot exceed 50 characters'],
+    },
+    country: {
+        type: String,
+        trim: true,
+        maxlength: [50, 'Country cannot exceed 50 characters'],
+    },
+    jobTitle: {
+        type: String,
+        trim: true,
+        maxlength: [100, 'Job title cannot exceed 100 characters'],
+    },
+    bio: {
+        type: String,
+        trim: true,
+        maxlength: [1000, 'Bio cannot exceed 1000 characters'],
+    },
 }, {
     timestamps: true,
     toJSON: { virtuals: true },

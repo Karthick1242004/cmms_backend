@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { validationResult } from 'express-validator';
 import Department, { IDepartment } from '../models/Department';
+import Employee, { IEmployee } from '../models/Employee';
 
 export class DepartmentController {
   // Get all departments with optional filtering and pagination
@@ -139,7 +140,7 @@ export class DepartmentController {
         return;
       }
 
-      const { name, code, description, manager, employeeCount = 0, status = 'active' } = req.body;
+      const { name, code, description, manager, employeeCount = 0, status = 'active', managerEmployee } = req.body;
 
       // Check if department name already exists
       const existingDepartment = await (Department as any).findOne({ 
@@ -154,13 +155,46 @@ export class DepartmentController {
         return;
       }
 
+      // If managerEmployee data is provided, create the employee first
+      let createdEmployee = null;
+      if (managerEmployee) {
+        // Check if employee email already exists
+        const existingEmployee = await (Employee as any).findOne({ 
+          email: managerEmployee.email.toLowerCase() 
+        }).exec();
+
+        if (existingEmployee) {
+          res.status(409).json({
+            success: false,
+            message: 'Employee with this email already exists'
+          });
+          return;
+        }
+
+        // Create manager employee
+        const newEmployee = new Employee({
+          name: managerEmployee.name,
+          email: managerEmployee.email.toLowerCase(),
+          phone: managerEmployee.phone,
+          password: managerEmployee.password, // Will be hashed by pre-save middleware
+          role: managerEmployee.role,
+          department: name, // Use the department name
+          accessLevel: managerEmployee.accessLevel,
+          status: managerEmployee.status,
+          employeeId: `EMP-${Date.now()}`, // Auto-generated
+          joinDate: new Date()
+        });
+
+        createdEmployee = await newEmployee.save();
+      }
+
       // Create new department
       const department = new Department({
         name,
         code,
         description,
         manager,
-        employeeCount,
+        employeeCount: managerEmployee ? 1 : employeeCount, // Set to 1 if manager employee was created
         status
       });
 
@@ -179,10 +213,31 @@ export class DepartmentController {
         updatedAt: savedDepartment.updatedAt
       };
 
+      const responseData: any = {
+        department: transformedDepartment
+      };
+
+      // Include employee information if created
+      if (createdEmployee) {
+        responseData.employee = {
+          id: createdEmployee._id.toString(),
+          name: createdEmployee.name,
+          email: createdEmployee.email,
+          phone: createdEmployee.phone,
+          role: createdEmployee.role,
+          department: createdEmployee.department,
+          accessLevel: createdEmployee.accessLevel,
+          status: createdEmployee.status,
+          employeeId: createdEmployee.employeeId
+        };
+      }
+
       res.status(201).json({
         success: true,
-        data: transformedDepartment,
-        message: 'Department created successfully'
+        data: responseData,
+        message: createdEmployee 
+          ? 'Department and manager employee created successfully' 
+          : 'Department created successfully'
       });
     } catch (error: any) {
       console.error('Error creating department:', error);

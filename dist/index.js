@@ -25,6 +25,7 @@ const noticeBoardRoutes_1 = __importDefault(require("./routes/noticeBoardRoutes"
 const locationRoutes_1 = __importDefault(require("./routes/locationRoutes"));
 const partRoutes_1 = __importDefault(require("./routes/partRoutes"));
 const chatRoutes_1 = __importDefault(require("./routes/chatRoutes"));
+const profileRoutes_1 = __importDefault(require("./routes/profileRoutes"));
 dotenv_1.default.config();
 const app = (0, express_1.default)();
 const PORT = process.env.PORT || process.env.SERVER_PORT || 5001;
@@ -211,6 +212,7 @@ app.use('/api/notice-board', noticeBoardRoutes_1.default);
 app.use('/api/locations', locationRoutes_1.default);
 app.use('/api/parts', partRoutes_1.default);
 app.use('/api/chat', chatRoutes_1.default);
+app.use('/api/profile', profileRoutes_1.default);
 app.get('/', (req, res) => {
     res.status(200).json({
         success: true,
