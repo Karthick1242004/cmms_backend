@@ -19,6 +19,7 @@ import dailyLogActivityRoutes from './routes/dailyLogActivityRoutes';
 import noticeBoardRoutes from './routes/noticeBoardRoutes';
 import locationRoutes from './routes/locationRoutes';
 import partRoutes from './routes/partRoutes';
+import stockTransactionRoutes from './routes/stockTransactionRoutes';
 import chatRoutes from './routes/chatRoutes';
 import profileRoutes from './routes/profileRoutes';
 
@@ -251,6 +252,7 @@ app.use('/api/daily-log-activities', dailyLogActivityRoutes);
 app.use('/api/notice-board', noticeBoardRoutes);
 app.use('/api/locations', locationRoutes);
 app.use('/api/parts', partRoutes);
+app.use('/api/stock-transactions', stockTransactionRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/profile', profileRoutes);
 
@@ -276,6 +278,7 @@ app.get('/', (req: Request, res: Response): void => {
         notice_board: '/api/notice-board',
         locations: '/api/locations',
         parts: '/api/parts',
+        stock_transactions: '/api/stock-transactions',
         chat: '/api/chat',
         database_info: '/api/database/info'
       }
