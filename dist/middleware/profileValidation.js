@@ -4,7 +4,7 @@ exports.validateUpdateProfile = void 0;
 const express_validator_1 = require("express-validator");
 exports.validateUpdateProfile = [
     (0, express_validator_1.body)('name')
-        .optional()
+        .optional({ nullable: true, checkFalsy: true })
         .isLength({ min: 2, max: 100 })
         .withMessage('Name must be between 2 and 100 characters')
         .trim(),
@@ -68,13 +68,19 @@ exports.validateUpdateProfile = [
         .trim(),
     (0, express_validator_1.body)('emergencyContact')
         .optional()
-        .isObject()
-        .withMessage('Emergency contact must be an object'),
+        .custom((value) => {
+        if (!value)
+            return true;
+        if (typeof value !== 'object') {
+            throw new Error('Emergency contact must be an object');
+        }
+        return true;
+    }),
     (0, express_validator_1.body)('emergencyContact.name')
         .optional({ values: 'null' })
         .if((value, { req }) => {
         const emergencyContact = req.body.emergencyContact;
-        return emergencyContact && emergencyContact.name && emergencyContact.name.length > 0;
+        return emergencyContact && typeof emergencyContact.name === 'string' && emergencyContact.name.trim().length > 0;
     })
         .isLength({ min: 1, max: 100 })
         .withMessage('Emergency contact name must be between 1 and 100 characters')
@@ -83,7 +89,7 @@ exports.validateUpdateProfile = [
         .optional({ values: 'null' })
         .if((value, { req }) => {
         const emergencyContact = req.body.emergencyContact;
-        return emergencyContact && emergencyContact.relationship && emergencyContact.relationship.length > 0;
+        return emergencyContact && typeof emergencyContact.relationship === 'string' && emergencyContact.relationship.trim().length > 0;
     })
         .isLength({ min: 1, max: 50 })
         .withMessage('Emergency contact relationship must be between 1 and 50 characters')
@@ -92,7 +98,7 @@ exports.validateUpdateProfile = [
         .optional({ values: 'null' })
         .if((value, { req }) => {
         const emergencyContact = req.body.emergencyContact;
-        return emergencyContact && emergencyContact.phone && emergencyContact.phone.length > 0;
+        return emergencyContact && typeof emergencyContact.phone === 'string' && emergencyContact.phone.trim().length > 0;
     })
         .matches(/^[\+]?[\d\s\-\(\)]{10,20}$/)
         .withMessage('Emergency contact phone must be a valid phone number')

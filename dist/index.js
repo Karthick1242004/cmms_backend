@@ -24,6 +24,7 @@ const dailyLogActivityRoutes_1 = __importDefault(require("./routes/dailyLogActiv
 const noticeBoardRoutes_1 = __importDefault(require("./routes/noticeBoardRoutes"));
 const locationRoutes_1 = __importDefault(require("./routes/locationRoutes"));
 const partRoutes_1 = __importDefault(require("./routes/partRoutes"));
+const stockTransactionRoutes_1 = __importDefault(require("./routes/stockTransactionRoutes"));
 const chatRoutes_1 = __importDefault(require("./routes/chatRoutes"));
 const profileRoutes_1 = __importDefault(require("./routes/profileRoutes"));
 dotenv_1.default.config();
@@ -211,6 +212,7 @@ app.use('/api/daily-log-activities', dailyLogActivityRoutes_1.default);
 app.use('/api/notice-board', noticeBoardRoutes_1.default);
 app.use('/api/locations', locationRoutes_1.default);
 app.use('/api/parts', partRoutes_1.default);
+app.use('/api/stock-transactions', stockTransactionRoutes_1.default);
 app.use('/api/chat', chatRoutes_1.default);
 app.use('/api/profile', profileRoutes_1.default);
 app.get('/', (req, res) => {
@@ -234,6 +236,7 @@ app.get('/', (req, res) => {
             notice_board: '/api/notice-board',
             locations: '/api/locations',
             parts: '/api/parts',
+            stock_transactions: '/api/stock-transactions',
             chat: '/api/chat',
             database_info: '/api/database/info'
         }

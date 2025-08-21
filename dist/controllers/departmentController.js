@@ -6,6 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.DepartmentController = void 0;
 const express_validator_1 = require("express-validator");
 const Department_1 = __importDefault(require("../models/Department"));
+const Employee_1 = __importDefault(require("../models/Employee"));
 class DepartmentController {
     static async getAllDepartments(req, res) {
         try {
@@ -115,7 +116,7 @@ class DepartmentController {
                 });
                 return;
             }
-            const { name, code, description, manager, employeeCount = 0, status = 'active' } = req.body;
+            const { name, code, description, manager, employeeCount = 0, status = 'active', managerEmployee } = req.body;
             const existingDepartment = await Department_1.default.findOne({
                 name: { $regex: new RegExp(`^${name}$`, 'i') }
             }).exec();
@@ -126,12 +127,38 @@ class DepartmentController {
                 });
                 return;
             }
+            let createdEmployee = null;
+            if (managerEmployee) {
+                const existingEmployee = await Employee_1.default.findOne({
+                    email: managerEmployee.email.toLowerCase()
+                }).exec();
+                if (existingEmployee) {
+                    res.status(409).json({
+                        success: false,
+                        message: 'Employee with this email already exists'
+                    });
+                    return;
+                }
+                const newEmployee = new Employee_1.default({
+                    name: managerEmployee.name,
+                    email: managerEmployee.email.toLowerCase(),
+                    phone: managerEmployee.phone,
+                    password: managerEmployee.password,
+                    role: managerEmployee.role,
+                    department: name,
+                    accessLevel: managerEmployee.accessLevel,
+                    status: managerEmployee.status,
+                    employeeId: `EMP-${Date.now()}`,
+                    joinDate: new Date()
+                });
+                createdEmployee = await newEmployee.save();
+            }
             const department = new Department_1.default({
                 name,
                 code,
                 description,
                 manager,
-                employeeCount,
+                employeeCount: managerEmployee ? 1 : employeeCount,
                 status
             });
             const savedDepartment = await department.save();
@@ -146,10 +173,28 @@ class DepartmentController {
                 createdAt: savedDepartment.createdAt,
                 updatedAt: savedDepartment.updatedAt
             };
+            const responseData = {
+                department: transformedDepartment
+            };
+            if (createdEmployee) {
+                responseData.employee = {
+                    id: createdEmployee._id.toString(),
+                    name: createdEmployee.name,
+                    email: createdEmployee.email,
+                    phone: createdEmployee.phone,
+                    role: createdEmployee.role,
+                    department: createdEmployee.department,
+                    accessLevel: createdEmployee.accessLevel,
+                    status: createdEmployee.status,
+                    employeeId: createdEmployee.employeeId
+                };
+            }
             res.status(201).json({
                 success: true,
-                data: transformedDepartment,
-                message: 'Department created successfully'
+                data: responseData,
+                message: createdEmployee
+                    ? 'Department and manager employee created successfully'
+                    : 'Department created successfully'
             });
         }
         catch (error) {

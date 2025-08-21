@@ -53,6 +53,13 @@ class ProfileController {
                     relationship: '',
                     phone: ''
                 },
+                firstName: user.firstName || '',
+                lastName: user.lastName || '',
+                address: user.address || '',
+                city: user.city || '',
+                country: user.country || '',
+                jobTitle: user.jobTitle || '',
+                bio: user.bio || '',
                 lastLoginAt: user.lastLoginAt,
                 createdAt: user.createdAt,
                 updatedAt: user.updatedAt
@@ -119,22 +126,11 @@ class ProfileController {
             }
             if (updates.emergencyContact) {
                 const ec = updates.emergencyContact;
-                if (ec.name === "" && ec.relationship === "" && ec.phone === "") {
-                    updates.emergencyContact = {
-                        name: '',
-                        relationship: '',
-                        phone: ''
-                    };
-                }
-                else if ((ec.name && ec.name.length > 0) || (ec.relationship && ec.relationship.length > 0) || (ec.phone && ec.phone.length > 0)) {
-                    if (!ec.name || !ec.relationship || !ec.phone) {
-                        res.status(400).json({
-                            success: false,
-                            message: 'Emergency contact requires all fields: name, relationship, and phone'
-                        });
-                        return;
-                    }
-                }
+                updates.emergencyContact = {
+                    name: typeof ec.name === 'string' ? ec.name.trim() : '',
+                    relationship: typeof ec.relationship === 'string' ? ec.relationship.trim() : '',
+                    phone: typeof ec.phone === 'string' ? ec.phone.trim() : ''
+                };
             }
             const updatedEmployee = await Employee_1.default.findByIdAndUpdate(user._id, { $set: updates }, { new: true, runValidators: true }).select('-password');
             if (!updatedEmployee) {
