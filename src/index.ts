@@ -53,11 +53,13 @@ const validateEnvironment = () => {
   console.log(`   - Exists: ${!!jwtSecret}`);
   console.log(`   - Length: ${jwtSecret?.length || 0} characters`);
   console.log(`   - Preview: ${jwtSecret ? jwtSecret.substring(0, 4) + '...' + jwtSecret.substring(jwtSecret.length - 4) : 'undefined'}`);
+  console.log(`   - FULL VALUE (TEMP DEBUG): "${jwtSecret}"`);
   
   if (jwtSecret.length < 32) {
     console.error('❌ CRITICAL: JWT_SECRET must be at least 32 characters long');
     console.error(`   Current length: ${jwtSecret.length}`);
     console.error(`   Required length: 32 or more`);
+    console.error(`   Current value: "${jwtSecret}"`);
     process.exit(1);
   }
   
