@@ -7,7 +7,7 @@ export const validateCreateShiftDetail = [
     .withMessage('Employee ID must be a positive integer')
     .toInt(),
 
-  body('employeeName')
+  body('employeeName') 
     .notEmpty()
     .withMessage('Employee name is required')
     .isLength({ min: 2, max: 100 })
