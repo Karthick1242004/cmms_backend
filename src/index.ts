@@ -3,6 +3,9 @@ console.log('🚨 DEBUG: index.ts file loaded successfully');
 console.log('🚨 DEBUG: Current working directory:', process.cwd());
 console.log('🚨 DEBUG: Node environment:', process.env.NODE_ENV);
 console.log('🚨 DEBUG: All environment variables:', Object.keys(process.env).filter(key => key.includes('JWT')).map(key => `${key}=${process.env[key]?.substring(0, 8)}...`));
+console.log('🚨 DEBUG: Railway environment:', process.env.RAILWAY_ENVIRONMENT);
+console.log('🚨 DEBUG: All env keys containing "JWT":', Object.keys(process.env).filter(key => key.includes('JWT')));
+console.log('🚨 DEBUG: Direct JWT_SECRET access:', process.env.JWT_SECRET ? 'EXISTS' : 'MISSING');
 
 import express, { Application, Request, Response, NextFunction } from 'express';
 import cors from 'cors';

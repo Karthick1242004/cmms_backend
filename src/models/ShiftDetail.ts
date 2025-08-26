@@ -160,7 +160,7 @@ ShiftDetailSchema.pre('save', function(next) {
 
 // Transform to frontend format
 ShiftDetailSchema.set('toJSON', {
-  transform: function(doc, ret) {
+  transform: function(doc: any, ret: any) {
     ret.id = ret.employeeId; // Use employeeId as id for frontend compatibility
     delete ret._id;
     delete ret.__v;

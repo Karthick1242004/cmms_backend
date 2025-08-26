@@ -256,7 +256,7 @@ MaintenanceScheduleSchema.pre('save', function(next) {
 
 // Transform to frontend format
 MaintenanceScheduleSchema.set('toJSON', {
-  transform: function(doc, ret) {
+  transform: function(doc: any, ret: any) {
     ret.id = ret._id;
     delete ret._id;
     delete ret.__v;

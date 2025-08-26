@@ -13,7 +13,10 @@ export class ProfileController {
         return null;
       }
 
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret') as any;
+      if (!process.env.JWT_SECRET) {
+        throw new Error('JWT_SECRET not configured');
+      }
+      const decoded = jwt.verify(token, process.env.JWT_SECRET) as any;
       const user = await (Employee as any).findById(decoded.userId).select('-password');
       return user;
     } catch (error) {

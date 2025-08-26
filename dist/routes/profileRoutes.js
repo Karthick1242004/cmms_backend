@@ -1,0 +1,10 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const profileController_1 = require("../controllers/profileController");
+const profileValidation_1 = require("../middleware/profileValidation");
+const router = (0, express_1.Router)();
+router.get('/', profileController_1.ProfileController.getProfile);
+router.put('/', profileValidation_1.validateUpdateProfile, profileController_1.ProfileController.updateProfile);
+router.get('/:employeeId', profileController_1.ProfileController.getProfileByEmployeeId);
+exports.default = router;
