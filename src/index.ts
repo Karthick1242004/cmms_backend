@@ -34,7 +34,7 @@ const validateEnvironment = () => {
   if (missingVars.length > 0) {
     console.error('❌ CRITICAL: Missing required environment variables:', missingVars.join(', '));
     process.exit(1);
-  }
+  } 
   
   // Validate JWT_SECRET strength
   const jwtSecret = process.env.JWT_SECRET!;
