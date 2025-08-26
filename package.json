@@ -12,7 +12,7 @@
     "build": "node --max-old-space-size=512 ./node_modules/.bin/tsc",
     "start": "node --max-old-space-size=512 dist/index.js",
     "postbuild": "echo 'Build completed successfully'",
-    "railway:build": "npm run build",
+    "railway:build": "npm run clean && npm run build",
     "railway:start": "npm run start",
     "test": "jest",
     "seed:departments": "ts-node src/scripts/seedDepartments.ts",

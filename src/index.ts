@@ -1,3 +1,9 @@
+// 🚨 DEBUG: Force immediate logging to verify file is loaded
+console.log('🚨 DEBUG: index.ts file loaded successfully');
+console.log('🚨 DEBUG: Current working directory:', process.cwd());
+console.log('🚨 DEBUG: Node environment:', process.env.NODE_ENV);
+console.log('🚨 DEBUG: All environment variables:', Object.keys(process.env).filter(key => key.includes('JWT')).map(key => `${key}=${process.env[key]?.substring(0, 8)}...`));
+
 import express, { Application, Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -103,7 +109,7 @@ if (process.env.FRONTEND_URL && !allowedOrigins.includes(process.env.FRONTEND_UR
 console.log('🔒 Allowed CORS origins:', allowedOrigins);
 
 app.use(cors({
-  origin: (origin, callback) => {
+  origin: (origin: string | undefined, callback: (error: Error | null, success?: boolean) => void) => {
     // Allow requests with no origin only in development (for mobile apps, Postman, etc.)
     if (!origin && NODE_ENV === 'development') {
       return callback(null, true);
@@ -191,7 +197,7 @@ const createRateLimiter = (windowMs: number, max: number, message: string) => {
     legacyHeaders: false,
     // More strict in production
     skipSuccessfulRequests: NODE_ENV === 'development',
-    keyGenerator: (req) => {
+    keyGenerator: (req: any) => {
       // Use forwarded IP in production, direct IP in development
       return req.ip || req.connection.remoteAddress || 'unknown';
     }

@@ -59,7 +59,7 @@ export const validateCreateShiftDetail = [
   body('workDays')
     .isArray()
     .withMessage('Work days must be an array')
-    .custom((value) => {
+    .custom((value: any) => {
       if (!Array.isArray(value)) return false;
       const validDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
       return value.every(day => validDays.includes(day)) && value.length <= 7;
@@ -163,7 +163,7 @@ export const validateUpdateShiftDetail = [
     .optional()
     .isArray()
     .withMessage('Work days must be an array')
-    .custom((value) => {
+    .custom((value: any) => {
       if (!Array.isArray(value)) return false;
       const validDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
       return value.every(day => validDays.includes(day)) && value.length <= 7;
