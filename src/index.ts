@@ -1,11 +1,7 @@
-// 🚨 DEBUG: Force immediate logging to verify file is loaded
-console.log('🚨 DEBUG: index.ts file loaded successfully');
-console.log('🚨 DEBUG: Current working directory:', process.cwd());
-console.log('🚨 DEBUG: Node environment:', process.env.NODE_ENV);
-console.log('🚨 DEBUG: All environment variables:', Object.keys(process.env).filter(key => key.includes('JWT')).map(key => `${key}=${process.env[key]?.substring(0, 8)}...`));
-console.log('🚨 DEBUG: Railway environment:', process.env.RAILWAY_ENVIRONMENT);
-console.log('🚨 DEBUG: All env keys containing "JWT":', Object.keys(process.env).filter(key => key.includes('JWT')));
-console.log('🚨 DEBUG: Direct JWT_SECRET access:', process.env.JWT_SECRET ? 'EXISTS' : 'MISSING');
+// Production startup logging
+console.log('🚀 CMMS Server starting up...');
+console.log('📍 Environment:', process.env.NODE_ENV || 'development');
+console.log('🌐 Railway environment:', process.env.RAILWAY_ENVIRONMENT || 'none');
 
 import express, { Application, Request, Response, NextFunction } from 'express';
 import cors from 'cors';
@@ -48,18 +44,9 @@ const validateEnvironment = () => {
   // Validate JWT_SECRET strength
   const jwtSecret = process.env.JWT_SECRET!;
   
-  // DEBUG: Log JWT_SECRET info (first/last 4 chars only for security)
-  console.log('🔍 DEBUG: JWT_SECRET validation');
-  console.log(`   - Exists: ${!!jwtSecret}`);
-  console.log(`   - Length: ${jwtSecret?.length || 0} characters`);
-  console.log(`   - Preview: ${jwtSecret ? jwtSecret.substring(0, 4) + '...' + jwtSecret.substring(jwtSecret.length - 4) : 'undefined'}`);
-  console.log(`   - FULL VALUE (TEMP DEBUG): "${jwtSecret}"`);
-  
+  // Validate JWT_SECRET strength
   if (jwtSecret.length < 32) {
     console.error('❌ CRITICAL: JWT_SECRET must be at least 32 characters long');
-    console.error(`   Current length: ${jwtSecret.length}`);
-    console.error(`   Required length: 32 or more`);
-    console.error(`   Current value: "${jwtSecret}"`);
     process.exit(1);
   }
   
@@ -115,19 +102,14 @@ console.log('🔒 Allowed CORS origins:', allowedOrigins);
 
 app.use(cors({
   origin: (origin: string | undefined, callback: (error: Error | null, success?: boolean) => void) => {
-    // Allow requests with no origin only in development (for mobile apps, Postman, etc.)
-    if (!origin && NODE_ENV === 'development') {
+    // Allow requests with no origin for health checks and internal services
+    if (!origin) {
+      console.log('🌐 CORS: Allowing request with no origin (health check/internal)');
       return callback(null, true);
     }
     
-    // Reject requests with no origin in production
-    if (!origin && NODE_ENV === 'production') {
-      console.warn('🚫 CORS: Blocked request with no origin in production');
-      return callback(new Error('Origin header required'), false);
-    }
-    
     // Check if origin is in allowed list
-    if (allowedOrigins.includes(origin!)) {
+    if (allowedOrigins.includes(origin)) {
       return callback(null, true);
     }
     
