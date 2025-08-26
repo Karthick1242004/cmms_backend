@@ -16,12 +16,17 @@ import {
   validateQueryDailyLogActivities,
   validateUpdateStatus
 } from '../middleware/dailyLogActivityValidation';
-import { extractUserContext } from '../middleware/authMiddleware';
+import { 
+  validateJWT, 
+  requireAuth, 
+  requireAccessLevel,
+  enforceDepartmentAccess 
+} from '../middleware/authMiddleware';
 
 const router = express.Router();
 
-// Apply user context middleware to all routes
-router.use(extractUserContext);
+// Apply JWT validation to all routes
+router.use(validateJWT);
 
 // Routes
 router.get('/', validateQueryDailyLogActivities, getAllDailyLogActivities);

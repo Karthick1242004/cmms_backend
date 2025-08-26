@@ -5,11 +5,21 @@ const meetingMinutesController_1 = require("../controllers/meetingMinutesControl
 const meetingMinutesValidation_1 = require("../middleware/meetingMinutesValidation");
 const authMiddleware_1 = require("../middleware/authMiddleware");
 const router = (0, express_1.Router)();
-router.get('/', authMiddleware_1.extractUserContext, meetingMinutesValidation_1.validateMeetingMinutesQuery, meetingMinutesValidation_1.handleValidationErrors, meetingMinutesController_1.MeetingMinutesController.getAllMeetingMinutes);
-router.get('/stats', authMiddleware_1.extractUserContext, meetingMinutesController_1.MeetingMinutesController.getMeetingMinutesStats);
-router.get('/:id', authMiddleware_1.extractUserContext, meetingMinutesValidation_1.validateMeetingMinutesId, meetingMinutesValidation_1.handleValidationErrors, meetingMinutesController_1.MeetingMinutesController.getMeetingMinutesById);
-router.post('/', authMiddleware_1.extractUserContext, meetingMinutesValidation_1.validateCreateMeetingMinutes, meetingMinutesValidation_1.handleValidationErrors, meetingMinutesController_1.MeetingMinutesController.createMeetingMinutes);
-router.put('/:id', authMiddleware_1.extractUserContext, meetingMinutesValidation_1.validateMeetingMinutesId, meetingMinutesValidation_1.validateUpdateMeetingMinutes, meetingMinutesValidation_1.handleValidationErrors, meetingMinutesController_1.MeetingMinutesController.updateMeetingMinutes);
-router.delete('/:id', authMiddleware_1.extractUserContext, meetingMinutesValidation_1.validateMeetingMinutesId, meetingMinutesValidation_1.handleValidationErrors, meetingMinutesController_1.MeetingMinutesController.deleteMeetingMinutes);
-router.patch('/:id/action-items', authMiddleware_1.extractUserContext, meetingMinutesValidation_1.validateMeetingMinutesId, meetingMinutesValidation_1.validateUpdateActionItem, meetingMinutesValidation_1.handleValidationErrors, meetingMinutesController_1.MeetingMinutesController.updateActionItemStatus);
+router.use(authMiddleware_1.validateJWT);
+router.get('/', authMiddleware_1.enforceDepartmentAccess, meetingMinutesValidation_1.validateMeetingMinutesQuery, meetingMinutesValidation_1.handleValidationErrors, meetingMinutesController_1.MeetingMinutesController.getAllMeetingMinutes);
+router.get('/stats', authMiddleware_1.enforceDepartmentAccess, meetingMinutesController_1.MeetingMinutesController.getMeetingMinutesStats);
+router.get('/:id', meetingMinutesValidation_1.validateMeetingMinutesId, meetingMinutesValidation_1.handleValidationErrors, meetingMinutesController_1.MeetingMinutesController.getMeetingMinutesById);
+router.post('/', (0, authMiddleware_1.requireAuth)({
+    roles: ['admin', 'manager'],
+    accessLevels: ['super_admin', 'department_admin']
+}), meetingMinutesValidation_1.validateCreateMeetingMinutes, meetingMinutesValidation_1.handleValidationErrors, meetingMinutesController_1.MeetingMinutesController.createMeetingMinutes);
+router.put('/:id', (0, authMiddleware_1.requireAuth)({
+    roles: ['admin', 'manager'],
+    accessLevels: ['super_admin', 'department_admin']
+}), meetingMinutesValidation_1.validateMeetingMinutesId, meetingMinutesValidation_1.validateUpdateMeetingMinutes, meetingMinutesValidation_1.handleValidationErrors, meetingMinutesController_1.MeetingMinutesController.updateMeetingMinutes);
+router.delete('/:id', (0, authMiddleware_1.requireAccessLevel)(['super_admin']), meetingMinutesValidation_1.validateMeetingMinutesId, meetingMinutesValidation_1.handleValidationErrors, meetingMinutesController_1.MeetingMinutesController.deleteMeetingMinutes);
+router.patch('/:id/action-items', (0, authMiddleware_1.requireAuth)({
+    roles: ['admin', 'manager'],
+    accessLevels: ['super_admin', 'department_admin']
+}), meetingMinutesValidation_1.validateMeetingMinutesId, meetingMinutesValidation_1.validateUpdateActionItem, meetingMinutesValidation_1.handleValidationErrors, meetingMinutesController_1.MeetingMinutesController.updateActionItemStatus);
 exports.default = router;

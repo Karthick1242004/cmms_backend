@@ -15,22 +15,75 @@ import {
   validateGetNotices,
   validateMarkAsViewed
 } from '../middleware/noticeBoardValidation';
-import { extractUserContext, requireRole } from '../middleware/authMiddleware';
+import { 
+  validateJWT, 
+  requireAuth, 
+  requireAccessLevel,
+  enforceDepartmentAccess 
+} from '../middleware/authMiddleware';
 
 const router = express.Router();
 
-// Apply user context middleware to all routes
-router.use(extractUserContext);
+// Apply JWT validation to all routes
+router.use(validateJWT);
 
 // Public routes (all authenticated users can access)
-router.get('/', validateGetNotices, getAllNoticeBoard);
-router.get('/:id', getNoticeBoardById);
+router.get(
+  '/',
+  enforceDepartmentAccess,
+  validateGetNotices,
+  getAllNoticeBoard
+);
+
+router.get(
+  '/:id',
+  getNoticeBoardById
+);
 
 // Admin-only routes
-router.post('/', requireRole(['admin']), validateCreateNotice, createNoticeBoard);
-router.put('/:id', requireRole(['admin']), validateUpdateNotice, updateNoticeBoard);
-router.delete('/:id', requireRole(['admin']), deleteNoticeBoard);
-router.patch('/:id/publish', requireRole(['admin']), validatePublishNotice, togglePublishNotice);
-router.get('/stats/overview', requireRole(['admin']), getNoticeBoardStats);
+router.post(
+  '/',
+  requireAuth({ 
+    roles: ['admin'],
+    accessLevels: ['super_admin', 'department_admin'] 
+  }),
+  validateCreateNotice,
+  createNoticeBoard
+);
+
+router.put(
+  '/:id',
+  requireAuth({ 
+    roles: ['admin'],
+    accessLevels: ['super_admin', 'department_admin'] 
+  }),
+  validateUpdateNotice,
+  updateNoticeBoard
+);
+
+router.delete(
+  '/:id',
+  requireAccessLevel(['super_admin']),
+  deleteNoticeBoard
+);
+
+router.patch(
+  '/:id/publish',
+  requireAuth({ 
+    roles: ['admin'],
+    accessLevels: ['super_admin', 'department_admin'] 
+  }),
+  validatePublishNotice,
+  togglePublishNotice
+);
+
+router.get(
+  '/stats/overview',
+  requireAuth({ 
+    roles: ['admin'],
+    accessLevels: ['super_admin', 'department_admin'] 
+  }),
+  getNoticeBoardStats
+);
 
 export default router;

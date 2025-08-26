@@ -8,48 +8,66 @@ import {
   validateUpdateActionItem,
   handleValidationErrors
 } from '../middleware/meetingMinutesValidation';
-import { extractUserContext } from '../middleware/authMiddleware';
+import { 
+  validateJWT, 
+  requireAuth, 
+  requireAccessLevel,
+  enforceDepartmentAccess 
+} from '../middleware/authMiddleware';
 
 const router = Router();
 
+// Apply JWT validation to all routes
+router.use(validateJWT);
+
 // GET /api/meeting-minutes - Get all meeting minutes with optional filtering and pagination
+// All authenticated users can view meeting minutes (with department filtering)
 router.get(
   '/',
-  extractUserContext,
+  enforceDepartmentAccess,
   validateMeetingMinutesQuery,
   handleValidationErrors,
   MeetingMinutesController.getAllMeetingMinutes
 );
 
 // GET /api/meeting-minutes/stats - Get meeting minutes statistics
+// All authenticated users can view stats (with department filtering)
 router.get(
   '/stats',
-  extractUserContext,
+  enforceDepartmentAccess,
   MeetingMinutesController.getMeetingMinutesStats
 );
 
 // GET /api/meeting-minutes/:id - Get meeting minutes by ID
+// All authenticated users can view specific meeting minutes
 router.get(
   '/:id',
-  extractUserContext,
   validateMeetingMinutesId,
   handleValidationErrors,
   MeetingMinutesController.getMeetingMinutesById
 );
 
 // POST /api/meeting-minutes - Create new meeting minutes
+// Admins and managers can create meeting minutes
 router.post(
   '/',
-  extractUserContext,
+  requireAuth({ 
+    roles: ['admin', 'manager'],
+    accessLevels: ['super_admin', 'department_admin'] 
+  }),
   validateCreateMeetingMinutes,
   handleValidationErrors,
   MeetingMinutesController.createMeetingMinutes
 );
 
 // PUT /api/meeting-minutes/:id - Update meeting minutes
+// Admins and managers can update meeting minutes
 router.put(
   '/:id',
-  extractUserContext,
+  requireAuth({ 
+    roles: ['admin', 'manager'],
+    accessLevels: ['super_admin', 'department_admin'] 
+  }),
   validateMeetingMinutesId,
   validateUpdateMeetingMinutes,
   handleValidationErrors,
@@ -57,18 +75,23 @@ router.put(
 );
 
 // DELETE /api/meeting-minutes/:id - Delete meeting minutes
+// Only super admins can delete meeting minutes
 router.delete(
   '/:id',
-  extractUserContext,
+  requireAccessLevel(['super_admin']),
   validateMeetingMinutesId,
   handleValidationErrors,
   MeetingMinutesController.deleteMeetingMinutes
 );
 
 // PATCH /api/meeting-minutes/:id/action-items - Update action item status
+// Admins and managers can update action items
 router.patch(
   '/:id/action-items',
-  extractUserContext,
+  requireAuth({ 
+    roles: ['admin', 'manager'],
+    accessLevels: ['super_admin', 'department_admin'] 
+  }),
   validateMeetingMinutesId,
   validateUpdateActionItem,
   handleValidationErrors,

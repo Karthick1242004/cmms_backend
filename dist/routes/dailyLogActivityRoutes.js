@@ -8,7 +8,7 @@ const dailyLogActivityController_1 = require("../controllers/dailyLogActivityCon
 const dailyLogActivityValidation_1 = require("../middleware/dailyLogActivityValidation");
 const authMiddleware_1 = require("../middleware/authMiddleware");
 const router = express_1.default.Router();
-router.use(authMiddleware_1.extractUserContext);
+router.use(authMiddleware_1.validateJWT);
 router.get('/', dailyLogActivityValidation_1.validateQueryDailyLogActivities, dailyLogActivityController_1.getAllDailyLogActivities);
 router.get('/stats', dailyLogActivityController_1.getDailyLogActivityStats);
 router.get('/:id', dailyLogActivityValidation_1.validateGetDailyLogActivity, dailyLogActivityController_1.getDailyLogActivityById);

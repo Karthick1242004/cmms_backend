@@ -26,6 +26,29 @@ import profileRoutes from './routes/profileRoutes';
 // Load environment variables
 dotenv.config();
 
+// Validate critical environment variables at startup
+const validateEnvironment = () => {
+  const requiredVars = ['JWT_SECRET', 'MONGODB_URI'];
+  const missingVars = requiredVars.filter(varName => !process.env[varName]);
+  
+  if (missingVars.length > 0) {
+    console.error('❌ CRITICAL: Missing required environment variables:', missingVars.join(', '));
+    process.exit(1);
+  }
+  
+  // Validate JWT_SECRET strength
+  const jwtSecret = process.env.JWT_SECRET!;
+  if (jwtSecret.length < 32) {
+    console.error('❌ CRITICAL: JWT_SECRET must be at least 32 characters long');
+    process.exit(1);
+  }
+  
+  console.log('✅ Environment variables validated successfully');
+};
+
+// Validate environment before starting server
+validateEnvironment();
+
 const app: Application = express();
 const PORT = process.env.PORT || process.env.SERVER_PORT || 5001;
 const NODE_ENV = process.env.NODE_ENV || 'development';
@@ -50,41 +73,47 @@ app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
 
-// CORS configuration
+// Secure CORS configuration
 const allowedOrigins: string[] = [
+  // Development origins
   'http://localhost:3000',
   'http://localhost:3001',
+  // Production origins (specific domains only)
+  'https://www.voneautomations.com',
   'https://cmms-dashboard.vercel.app',
   'https://cms-dashboard-frontend.vercel.app',
   'https://cms-dashboard-frontend-karthicks.vercel.app'
 ];
 
-// Add frontend URL if provided (avoid array spread in production)
+// Add frontend URL if provided and not already included
 if (process.env.FRONTEND_URL && !allowedOrigins.includes(process.env.FRONTEND_URL)) {
   allowedOrigins.push(process.env.FRONTEND_URL);
+  console.log(`✅ Added FRONTEND_URL to allowed origins: ${process.env.FRONTEND_URL}`);
 }
+
+console.log('🔒 Allowed CORS origins:', allowedOrigins);
 
 app.use(cors({
   origin: (origin, callback) => {
-    // Allow requests with no origin (mobile apps, curl, etc.)
-    if (!origin) return callback(null, true);
+    // Allow requests with no origin only in development (for mobile apps, Postman, etc.)
+    if (!origin && NODE_ENV === 'development') {
+      return callback(null, true);
+    }
+    
+    // Reject requests with no origin in production
+    if (!origin && NODE_ENV === 'production') {
+      console.warn('🚫 CORS: Blocked request with no origin in production');
+      return callback(new Error('Origin header required'), false);
+    }
     
     // Check if origin is in allowed list
-    if (allowedOrigins.includes(origin)) {
+    if (allowedOrigins.includes(origin!)) {
       return callback(null, true);
     }
     
-    // In production, allow any vercel.app subdomain
-    if (NODE_ENV === 'production' && origin.endsWith('.vercel.app')) {
-      return callback(null, true);
-    }
-    
-    // Allow railway.app domains for the backend
-    if (origin.endsWith('.railway.app')) {
-      return callback(null, true);
-    }
-    
-    return callback(new Error('Not allowed by CORS'), false);
+    // Log and reject unauthorized origins
+    console.warn(`🚫 CORS: Blocked unauthorized origin: ${origin}`);
+    return callback(new Error(`Origin ${origin} not allowed by CORS policy`), false);
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
@@ -92,11 +121,7 @@ app.use(cors({
     'Content-Type', 
     'Authorization', 
     'X-Requested-With',
-    'x-user-id',
-    'x-user-name', 
-    'x-user-email',
-    'x-user-department',
-    'x-user-role'
+    'X-CSRF-Token'
   ],
   exposedHeaders: ['X-Total-Count', 'X-Has-More'],
   maxAge: 86400, // 24 hours
@@ -143,10 +168,39 @@ if (NODE_ENV === 'development') {
   app.use(morgan('combined'));
 }
 
-// Rate limiting (only in production)
+// Enhanced rate limiting for all environments
+const createRateLimiter = (windowMs: number, max: number, message: string) => {
+  return rateLimit({
+    windowMs,
+    max,
+    message: {
+      success: false,
+      message,
+      code: 'RATE_LIMIT_EXCEEDED'
+    },
+    standardHeaders: true,
+    legacyHeaders: false,
+    // More strict in production
+    skipSuccessfulRequests: NODE_ENV === 'development',
+    keyGenerator: (req) => {
+      // Use forwarded IP in production, direct IP in development
+      return req.ip || req.connection.remoteAddress || 'unknown';
+    }
+  });
+};
+
+// Apply different rate limits based on environment
 if (NODE_ENV === 'production') {
-  app.use('/api/', limiter);
+  // Production: Stricter rate limiting
+  app.use('/api/auth/', createRateLimiter(15 * 60 * 1000, 5, 'Too many authentication attempts')); // 5 per 15 minutes
+  app.use('/api/', createRateLimiter(15 * 60 * 1000, 100, 'Too many API requests')); // 100 per 15 minutes
+} else {
+  // Development: More lenient but still protected
+  app.use('/api/auth/', createRateLimiter(15 * 60 * 1000, 20, 'Too many authentication attempts')); // 20 per 15 minutes
+  app.use('/api/', createRateLimiter(15 * 60 * 1000, 500, 'Too many API requests')); // 500 per 15 minutes
 }
+
+console.log(`🔒 Rate limiting enabled for ${NODE_ENV} environment`);
 
 // Health check endpoint
 app.get('/health', async (req: Request, res: Response): Promise<void> => {

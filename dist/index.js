@@ -28,6 +28,21 @@ const stockTransactionRoutes_1 = __importDefault(require("./routes/stockTransact
 const chatRoutes_1 = __importDefault(require("./routes/chatRoutes"));
 const profileRoutes_1 = __importDefault(require("./routes/profileRoutes"));
 dotenv_1.default.config();
+const validateEnvironment = () => {
+    const requiredVars = ['JWT_SECRET', 'MONGODB_URI'];
+    const missingVars = requiredVars.filter(varName => !process.env[varName]);
+    if (missingVars.length > 0) {
+        console.error('❌ CRITICAL: Missing required environment variables:', missingVars.join(', '));
+        process.exit(1);
+    }
+    const jwtSecret = process.env.JWT_SECRET;
+    if (jwtSecret.length < 32) {
+        console.error('❌ CRITICAL: JWT_SECRET must be at least 32 characters long');
+        process.exit(1);
+    }
+    console.log('✅ Environment variables validated successfully');
+};
+validateEnvironment();
 const app = (0, express_1.default)();
 const PORT = process.env.PORT || process.env.SERVER_PORT || 5001;
 const NODE_ENV = process.env.NODE_ENV || 'development';
@@ -48,27 +63,30 @@ app.use((0, helmet_1.default)({
 const allowedOrigins = [
     'http://localhost:3000',
     'http://localhost:3001',
+    'https://www.voneautomations.com',
     'https://cmms-dashboard.vercel.app',
     'https://cms-dashboard-frontend.vercel.app',
     'https://cms-dashboard-frontend-karthicks.vercel.app'
 ];
 if (process.env.FRONTEND_URL && !allowedOrigins.includes(process.env.FRONTEND_URL)) {
     allowedOrigins.push(process.env.FRONTEND_URL);
+    console.log(`✅ Added FRONTEND_URL to allowed origins: ${process.env.FRONTEND_URL}`);
 }
+console.log('🔒 Allowed CORS origins:', allowedOrigins);
 app.use((0, cors_1.default)({
     origin: (origin, callback) => {
-        if (!origin)
+        if (!origin && NODE_ENV === 'development') {
             return callback(null, true);
+        }
+        if (!origin && NODE_ENV === 'production') {
+            console.warn('🚫 CORS: Blocked request with no origin in production');
+            return callback(new Error('Origin header required'), false);
+        }
         if (allowedOrigins.includes(origin)) {
             return callback(null, true);
         }
-        if (NODE_ENV === 'production' && origin.endsWith('.vercel.app')) {
-            return callback(null, true);
-        }
-        if (origin.endsWith('.railway.app')) {
-            return callback(null, true);
-        }
-        return callback(new Error('Not allowed by CORS'), false);
+        console.warn(`🚫 CORS: Blocked unauthorized origin: ${origin}`);
+        return callback(new Error(`Origin ${origin} not allowed by CORS policy`), false);
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
@@ -76,11 +94,7 @@ app.use((0, cors_1.default)({
         'Content-Type',
         'Authorization',
         'X-Requested-With',
-        'x-user-id',
-        'x-user-name',
-        'x-user-email',
-        'x-user-department',
-        'x-user-role'
+        'X-CSRF-Token'
     ],
     exposedHeaders: ['X-Total-Count', 'X-Has-More'],
     maxAge: 86400,
@@ -119,9 +133,32 @@ if (NODE_ENV === 'development') {
 else {
     app.use((0, morgan_1.default)('combined'));
 }
+const createRateLimiter = (windowMs, max, message) => {
+    return (0, express_rate_limit_1.default)({
+        windowMs,
+        max,
+        message: {
+            success: false,
+            message,
+            code: 'RATE_LIMIT_EXCEEDED'
+        },
+        standardHeaders: true,
+        legacyHeaders: false,
+        skipSuccessfulRequests: NODE_ENV === 'development',
+        keyGenerator: (req) => {
+            return req.ip || req.connection.remoteAddress || 'unknown';
+        }
+    });
+};
 if (NODE_ENV === 'production') {
-    app.use('/api/', limiter);
+    app.use('/api/auth/', createRateLimiter(15 * 60 * 1000, 5, 'Too many authentication attempts'));
+    app.use('/api/', createRateLimiter(15 * 60 * 1000, 100, 'Too many API requests'));
 }
+else {
+    app.use('/api/auth/', createRateLimiter(15 * 60 * 1000, 20, 'Too many authentication attempts'));
+    app.use('/api/', createRateLimiter(15 * 60 * 1000, 500, 'Too many API requests'));
+}
+console.log(`🔒 Rate limiting enabled for ${NODE_ENV} environment`);
 app.get('/health', async (req, res) => {
     const database = database_1.default.getInstance();
     const isConnected = database.isConnected();
