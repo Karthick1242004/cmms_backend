@@ -32,7 +32,7 @@ export const validateCreateShiftDetail = [
     .notEmpty()
     .withMessage('Department is required')
     .isLength({ min: 2, max: 50 })
-    .withMessage('Department must be between 2 and 50 characters')
+    .withMessage('Department must be between 2 and 50 characters') 
     .trim()
     .escape(),
 
