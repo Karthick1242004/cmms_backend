@@ -26,8 +26,8 @@ export class PartController {
       
       let query: any = { status: 'active' };
 
-      // Department filtering based on user role
-      if (userRole === 'admin') {
+      // Department filtering based on user access level
+      if (userRole === 'admin' || req.user?.accessLevel === 'super_admin') {
         // Admin can see all parts
         if (department && department !== 'all') {
           query.$or = [
@@ -178,9 +178,9 @@ export class PartController {
 
       // Check department access
       const userDepartment = req.user?.department;
-      const userRole = req.user?.role;
+      const userAccessLevel = req.user?.accessLevel;
       
-      if (userRole !== 'admin') {
+      if (userAccessLevel !== 'super_admin') {
         const hasAccess = part.department === userDepartment || 
                          part.linkedAssets?.some((asset: any) => asset.assetDepartment === userDepartment);
         
@@ -249,7 +249,7 @@ export class PartController {
       let matchQuery: any = { status: 'active' };
 
       // Apply department filtering
-      if (userRole !== 'admin') {
+      if (req.user?.accessLevel !== 'super_admin') {
         matchQuery.$or = [
           { department: userDepartment },
           { 'linkedAssets.assetDepartment': userDepartment }
@@ -375,9 +375,10 @@ export class PartController {
 
       // Check access permissions
       const userDepartment = req.user?.department;
-      const userRole = req.user?.role;
+      const userAccessLevel = req.user?.accessLevel;
       
-      if (userRole !== 'admin' && department !== userDepartment) {
+      // Super admins can create parts for any department
+      if (userAccessLevel !== 'super_admin' && department !== userDepartment) {
         res.status(403).json({
           success: false,
           message: 'You can only create parts for your own department'
@@ -506,9 +507,9 @@ export class PartController {
 
       // Check access permissions
       const userDepartment = req.user?.department;
-      const userRole = req.user?.role;
+      const userAccessLevel = req.user?.accessLevel;
       
-      if (userRole !== 'admin') {
+      if (userAccessLevel !== 'super_admin') {
         const hasAccess = existingPart.department === userDepartment || 
                          existingPart.linkedAssets?.some((asset: any) => asset.assetDepartment === userDepartment);
         
@@ -670,9 +671,9 @@ export class PartController {
 
       // Check access permissions
       const userDepartment = req.user?.department;
-      const userRole = req.user?.role;
+      const userAccessLevel = req.user?.accessLevel;
       
-      if (userRole !== 'admin') {
+      if (userAccessLevel !== 'super_admin') {
         const hasAccess = existingPart.department === userDepartment || 
                          existingPart.linkedAssets?.some((asset: any) => asset.assetDepartment === userDepartment);
         
