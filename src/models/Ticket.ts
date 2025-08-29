@@ -1,7 +1,9 @@
 import mongoose, { Document, Schema } from 'mongoose';
+import Counter from './Counter';
 
 export interface ITicket extends Document {
   _id: string;
+  ticketId: string; // Auto-generated unique ticket ID like TKT-2025-000001
   title: string;
   description: string;
   status: 'open' | 'in-progress' | 'pending' | 'completed' | 'cancelled';
@@ -24,6 +26,12 @@ export interface ITicket extends Document {
 }
 
 const TicketSchema = new Schema<ITicket>({
+  ticketId: {
+    type: String,
+    required: true,
+    unique: true,
+    index: true,
+  },
   title: {
     type: String,
     required: [true, 'Ticket title is required'],
@@ -139,6 +147,34 @@ TicketSchema.set('toJSON', {
     return ret;
   },
 });
+
+// Generate ticketId before validation so 'required' validation passes
+// FIXED: Use atomic counter to prevent race conditions and duplicate IDs
+TicketSchema.pre('validate', async function (next) {
+  try {
+    if (this.isNew && !this.ticketId) {
+      const year = new Date().getFullYear()
+      
+      // Use separate Counter model to atomically get the next sequence number
+      // This prevents race conditions when multiple tickets are created simultaneously
+      const result = await (Counter as any).findOneAndUpdate(
+        { _id: `ticket_${year}` }, // Use year-specific counter
+        { $inc: { sequence: 1 } }, // Increment the sequence
+        { 
+          upsert: true, // Create if doesn't exist
+          new: true, // Return the updated document
+          setDefaultsOnInsert: true // Set defaults on insert
+        }
+      )
+      
+      // Generate ticketId with the sequence number
+      this.ticketId = `TKT-${year}-${String(result.sequence).padStart(6, '0')}`
+    }
+    next()
+  } catch (err) {
+    next(err as any)
+  }
+})
 
 const Ticket = mongoose.models.Ticket || mongoose.model<ITicket>('Ticket', TicketSchema);
 
