@@ -34,13 +34,18 @@ export const getAllNoticeBoard = async (req: AuthenticatedRequest, res: Response
     // Build query for visible notices
     const query: any = {
       isActive: true,
-      isPublished: true,
       $or: [
         { expiresAt: { $exists: false } },
         { expiresAt: null },
         { expiresAt: { $gt: new Date() } }
       ]
     };
+
+    // For non-admin users, only show published notices
+    // For admin users, show all notices (published and drafts) unless specifically filtered
+    if (userRole !== 'admin') {
+      query.isPublished = true;
+    }
 
     // Apply user-specific visibility filters
     const visibilityConditions = [
@@ -55,15 +60,21 @@ export const getAllNoticeBoard = async (req: AuthenticatedRequest, res: Response
 
     // Apply additional filters if provided (admin-only filters)
     if (userRole === 'admin') {
+      // Admin can explicitly filter by active status
       if (isActive !== undefined) {
         query.isActive = isActive === 'true';
       }
+      // Admin can explicitly filter by published status
       if (isPublished !== undefined) {
         query.isPublished = isPublished === 'true';
       }
+      // Admin can filter by target audience
       if (targetAudience) {
         query.targetAudience = targetAudience;
       }
+    } else {
+      // Non-admin users always see only active notices
+      // isPublished filter is already applied above for non-admin users
     }
 
     // Apply common filters
