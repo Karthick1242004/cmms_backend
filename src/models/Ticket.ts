@@ -1,6 +1,14 @@
 import mongoose, { Document, Schema } from 'mongoose';
 import Counter from './Counter';
 
+export interface IActivityLogEntry {
+  date: Date;
+  loggedBy: string;
+  remarks: string;
+  action?: string;
+  duration?: number;
+}
+
 export interface ITicket extends Document {
   _id: string;
   ticketId: string; // Auto-generated unique ticket ID like TKT-2025-000001
@@ -21,6 +29,7 @@ export interface ITicket extends Document {
   completedDate?: Date;
   attachments?: string[]; // Array of file URLs
   notes?: string;
+  activityLog: IActivityLogEntry[]; // Activity log for tracking ticket history
   createdAt: Date;
   updatedAt: Date;
 }
@@ -124,6 +133,33 @@ const TicketSchema = new Schema<ITicket>({
     trim: true,
     maxlength: [2000, 'Notes cannot exceed 2000 characters'],
   },
+  activityLog: [{
+    date: {
+      type: Date,
+      default: Date.now,
+      required: true,
+    },
+    loggedBy: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    remarks: {
+      type: String,
+      required: true,
+      trim: true,
+      maxlength: [1000, 'Remarks cannot exceed 1000 characters'],
+    },
+    action: {
+      type: String,
+      trim: true,
+      maxlength: [50, 'Action cannot exceed 50 characters'],
+    },
+    duration: {
+      type: Number,
+      min: [0, 'Duration cannot be negative'],
+    },
+  }],
 }, {
   timestamps: true,
   toJSON: { virtuals: true },

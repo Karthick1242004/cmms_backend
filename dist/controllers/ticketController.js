@@ -380,6 +380,9 @@ class TicketController {
             const { id } = req.params;
             const { remarks, duration, action = 'Comment' } = req.body;
             const userName = req.headers['x-user-name'] || 'System';
+            const userId = req.headers['x-user-id'] || '';
+            const userEmail = req.headers['x-user-email'] || '';
+            const userDepartment = req.headers['x-user-department'] || 'General';
             if (!remarks) {
                 res.status(400).json({
                     success: false,
@@ -395,9 +398,14 @@ class TicketController {
                 });
                 return;
             }
+            if (!ticket.activityLog) {
+                ticket.activityLog = [];
+            }
+            const loggedByName = userName !== 'System' ? userName :
+                (userEmail ? userEmail : 'Unknown User');
             const logEntry = {
                 date: new Date(),
-                loggedBy: userName,
+                loggedBy: loggedByName,
                 remarks,
                 action
             };

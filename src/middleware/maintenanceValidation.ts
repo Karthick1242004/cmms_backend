@@ -108,6 +108,39 @@ export const validateCreateSchedule = [
     .trim()
     .escape(),
 
+  // New assignment fields (all optional)
+  body('department')
+    .optional()
+    .isLength({ max: 50 })
+    .withMessage('Department cannot exceed 50 characters')
+    .trim()
+    .escape(),
+
+  body('isOpenTicket')
+    .optional()
+    .isBoolean()
+    .withMessage('IsOpenTicket must be a boolean')
+    .toBoolean(),
+
+  body('assignedDepartment')
+    .optional()
+    .isLength({ max: 50 })
+    .withMessage('Assigned department cannot exceed 50 characters')
+    .trim()
+    .escape(),
+
+  body('assignedUsers')
+    .optional()
+    .isArray()
+    .withMessage('Assigned users must be an array'),
+
+  body('assignedUsers.*')
+    .if(body('assignedUsers').exists())
+    .isLength({ min: 1, max: 100 })
+    .withMessage('User name must be between 1 and 100 characters')
+    .trim()
+    .escape(),
+
   body('parts')
     .optional()
     .isArray()
@@ -281,6 +314,39 @@ export const validateUpdateSchedule = [
     .optional()
     .isIn(['active', 'inactive', 'completed', 'overdue'])
     .withMessage('Status must be active, inactive, completed, or overdue'),
+
+  // New assignment fields (all optional)
+  body('department')
+    .optional()
+    .isLength({ max: 50 })
+    .withMessage('Department cannot exceed 50 characters')
+    .trim()
+    .escape(),
+
+  body('isOpenTicket')
+    .optional()
+    .isBoolean()
+    .withMessage('IsOpenTicket must be a boolean')
+    .toBoolean(),
+
+  body('assignedDepartment')
+    .optional()
+    .isLength({ max: 50 })
+    .withMessage('Assigned department cannot exceed 50 characters')
+    .trim()
+    .escape(),
+
+  body('assignedUsers')
+    .optional()
+    .isArray()
+    .withMessage('Assigned users must be an array'),
+
+  body('assignedUsers.*')
+    .if(body('assignedUsers').exists())
+    .isLength({ min: 1, max: 100 })
+    .withMessage('User name must be between 1 and 100 characters')
+    .trim()
+    .escape(),
 ];
 
 // ========== MAINTENANCE RECORD VALIDATIONS ==========
@@ -392,6 +458,39 @@ export const validateCreateRecord = [
     .withMessage('Admin notes cannot exceed 1000 characters')
     .trim()
     .escape(),
+
+  // New assignment fields (all optional)
+  body('department')
+    .optional()
+    .isLength({ max: 50 })
+    .withMessage('Department cannot exceed 50 characters')
+    .trim()
+    .escape(),
+
+  body('isOpenTicket')
+    .optional()
+    .isBoolean()
+    .withMessage('IsOpenTicket must be a boolean')
+    .toBoolean(),
+
+  body('assignedDepartment')
+    .optional()
+    .isLength({ max: 50 })
+    .withMessage('Assigned department cannot exceed 50 characters')
+    .trim()
+    .escape(),
+
+  body('assignedUsers')
+    .optional()
+    .isArray()
+    .withMessage('Assigned users must be an array'),
+
+  body('assignedUsers.*')
+    .if(body('assignedUsers').exists())
+    .isLength({ min: 1, max: 100 })
+    .withMessage('User name must be between 1 and 100 characters')
+    .trim()
+    .escape(),
 ];
 
 // Validation for updating a maintenance record
@@ -458,6 +557,39 @@ export const validateUpdateRecord = [
     .optional()
     .isLength({ max: 1000 })
     .withMessage('Admin notes cannot exceed 1000 characters')
+    .trim()
+    .escape(),
+
+  // New assignment fields (all optional)
+  body('department')
+    .optional()
+    .isLength({ max: 50 })
+    .withMessage('Department cannot exceed 50 characters')
+    .trim()
+    .escape(),
+
+  body('isOpenTicket')
+    .optional()
+    .isBoolean()
+    .withMessage('IsOpenTicket must be a boolean')
+    .toBoolean(),
+
+  body('assignedDepartment')
+    .optional()
+    .isLength({ max: 50 })
+    .withMessage('Assigned department cannot exceed 50 characters')
+    .trim()
+    .escape(),
+
+  body('assignedUsers')
+    .optional()
+    .isArray()
+    .withMessage('Assigned users must be an array'),
+
+  body('assignedUsers.*')
+    .if(body('assignedUsers').exists())
+    .isLength({ min: 1, max: 100 })
+    .withMessage('User name must be between 1 and 100 characters')
     .trim()
     .escape(),
 ];

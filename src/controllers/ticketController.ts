@@ -476,7 +476,13 @@ export class TicketController {
     try {
       const { id } = req.params;
       const { remarks, duration, action = 'Comment' } = req.body;
+      
+      // Extract user information from headers
       const userName = (req.headers['x-user-name'] as string) || 'System';
+      const userId = (req.headers['x-user-id'] as string) || '';
+      const userEmail = (req.headers['x-user-email'] as string) || '';
+      const userDepartment = (req.headers['x-user-department'] as string) || 'General';
+
 
       if (!remarks) {
         res.status(400).json({
@@ -495,16 +501,26 @@ export class TicketController {
         return;
       }
 
-      // Add activity log entry
+      // Initialize activityLog if it doesn't exist (for backwards compatibility)
+      if (!ticket.activityLog) {
+        ticket.activityLog = [];
+      }
+
+      // Add activity log entry with better user identification
+      const loggedByName = userName !== 'System' ? userName : 
+                          (userEmail ? userEmail : 'Unknown User');
+      
       const logEntry: any = {
         date: new Date(),
-        loggedBy: userName,
+        loggedBy: loggedByName,
         remarks,
         action
       };
       if (duration) {
         logEntry.duration = Number(duration);
       }
+
+
       ticket.activityLog.push(logEntry);
 
       const updatedTicket = await ticket.save();

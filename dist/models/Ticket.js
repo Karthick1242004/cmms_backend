@@ -32,9 +32,19 @@ var __importStar = (this && this.__importStar) || (function () {
         return result;
     };
 })();
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importStar(require("mongoose"));
+const Counter_1 = __importDefault(require("./Counter"));
 const TicketSchema = new mongoose_1.Schema({
+    ticketId: {
+        type: String,
+        required: true,
+        unique: true,
+        index: true,
+    },
     title: {
         type: String,
         required: [true, 'Ticket title is required'],
@@ -127,6 +137,33 @@ const TicketSchema = new mongoose_1.Schema({
         trim: true,
         maxlength: [2000, 'Notes cannot exceed 2000 characters'],
     },
+    activityLog: [{
+            date: {
+                type: Date,
+                default: Date.now,
+                required: true,
+            },
+            loggedBy: {
+                type: String,
+                required: true,
+                trim: true,
+            },
+            remarks: {
+                type: String,
+                required: true,
+                trim: true,
+                maxlength: [1000, 'Remarks cannot exceed 1000 characters'],
+            },
+            action: {
+                type: String,
+                trim: true,
+                maxlength: [50, 'Action cannot exceed 50 characters'],
+            },
+            duration: {
+                type: Number,
+                min: [0, 'Duration cannot be negative'],
+            },
+        }],
 }, {
     timestamps: true,
     toJSON: { virtuals: true },
@@ -145,6 +182,23 @@ TicketSchema.set('toJSON', {
         delete ret.__v;
         return ret;
     },
+});
+TicketSchema.pre('validate', async function (next) {
+    try {
+        if (this.isNew && !this.ticketId) {
+            const year = new Date().getFullYear();
+            const result = await Counter_1.default.findOneAndUpdate({ _id: `ticket_${year}` }, { $inc: { sequence: 1 } }, {
+                upsert: true,
+                new: true,
+                setDefaultsOnInsert: true
+            });
+            this.ticketId = `TKT-${year}-${String(result.sequence).padStart(6, '0')}`;
+        }
+        next();
+    }
+    catch (err) {
+        next(err);
+    }
 });
 const Ticket = mongoose_1.default.models.Ticket || mongoose_1.default.model('Ticket', TicketSchema);
 exports.default = Ticket;

@@ -92,6 +92,33 @@ exports.validateCreateSchedule = [
         .withMessage('Created by must be between 2 and 100 characters')
         .trim()
         .escape(),
+    (0, express_validator_1.body)('department')
+        .optional()
+        .isLength({ max: 50 })
+        .withMessage('Department cannot exceed 50 characters')
+        .trim()
+        .escape(),
+    (0, express_validator_1.body)('isOpenTicket')
+        .optional()
+        .isBoolean()
+        .withMessage('IsOpenTicket must be a boolean')
+        .toBoolean(),
+    (0, express_validator_1.body)('assignedDepartment')
+        .optional()
+        .isLength({ max: 50 })
+        .withMessage('Assigned department cannot exceed 50 characters')
+        .trim()
+        .escape(),
+    (0, express_validator_1.body)('assignedUsers')
+        .optional()
+        .isArray()
+        .withMessage('Assigned users must be an array'),
+    (0, express_validator_1.body)('assignedUsers.*')
+        .if((0, express_validator_1.body)('assignedUsers').exists())
+        .isLength({ min: 1, max: 100 })
+        .withMessage('User name must be between 1 and 100 characters')
+        .trim()
+        .escape(),
     (0, express_validator_1.body)('parts')
         .optional()
         .isArray()
@@ -239,6 +266,33 @@ exports.validateUpdateSchedule = [
         .optional()
         .isIn(['active', 'inactive', 'completed', 'overdue'])
         .withMessage('Status must be active, inactive, completed, or overdue'),
+    (0, express_validator_1.body)('department')
+        .optional()
+        .isLength({ max: 50 })
+        .withMessage('Department cannot exceed 50 characters')
+        .trim()
+        .escape(),
+    (0, express_validator_1.body)('isOpenTicket')
+        .optional()
+        .isBoolean()
+        .withMessage('IsOpenTicket must be a boolean')
+        .toBoolean(),
+    (0, express_validator_1.body)('assignedDepartment')
+        .optional()
+        .isLength({ max: 50 })
+        .withMessage('Assigned department cannot exceed 50 characters')
+        .trim()
+        .escape(),
+    (0, express_validator_1.body)('assignedUsers')
+        .optional()
+        .isArray()
+        .withMessage('Assigned users must be an array'),
+    (0, express_validator_1.body)('assignedUsers.*')
+        .if((0, express_validator_1.body)('assignedUsers').exists())
+        .isLength({ min: 1, max: 100 })
+        .withMessage('User name must be between 1 and 100 characters')
+        .trim()
+        .escape(),
 ];
 exports.validateCreateRecord = [
     (0, express_validator_1.body)('scheduleId')
@@ -331,6 +385,33 @@ exports.validateCreateRecord = [
         .withMessage('Admin notes cannot exceed 1000 characters')
         .trim()
         .escape(),
+    (0, express_validator_1.body)('department')
+        .optional()
+        .isLength({ max: 50 })
+        .withMessage('Department cannot exceed 50 characters')
+        .trim()
+        .escape(),
+    (0, express_validator_1.body)('isOpenTicket')
+        .optional()
+        .isBoolean()
+        .withMessage('IsOpenTicket must be a boolean')
+        .toBoolean(),
+    (0, express_validator_1.body)('assignedDepartment')
+        .optional()
+        .isLength({ max: 50 })
+        .withMessage('Assigned department cannot exceed 50 characters')
+        .trim()
+        .escape(),
+    (0, express_validator_1.body)('assignedUsers')
+        .optional()
+        .isArray()
+        .withMessage('Assigned users must be an array'),
+    (0, express_validator_1.body)('assignedUsers.*')
+        .if((0, express_validator_1.body)('assignedUsers').exists())
+        .isLength({ min: 1, max: 100 })
+        .withMessage('User name must be between 1 and 100 characters')
+        .trim()
+        .escape(),
 ];
 exports.validateUpdateRecord = [
     (0, express_validator_1.param)('id')
@@ -385,6 +466,33 @@ exports.validateUpdateRecord = [
         .optional()
         .isLength({ max: 1000 })
         .withMessage('Admin notes cannot exceed 1000 characters')
+        .trim()
+        .escape(),
+    (0, express_validator_1.body)('department')
+        .optional()
+        .isLength({ max: 50 })
+        .withMessage('Department cannot exceed 50 characters')
+        .trim()
+        .escape(),
+    (0, express_validator_1.body)('isOpenTicket')
+        .optional()
+        .isBoolean()
+        .withMessage('IsOpenTicket must be a boolean')
+        .toBoolean(),
+    (0, express_validator_1.body)('assignedDepartment')
+        .optional()
+        .isLength({ max: 50 })
+        .withMessage('Assigned department cannot exceed 50 characters')
+        .trim()
+        .escape(),
+    (0, express_validator_1.body)('assignedUsers')
+        .optional()
+        .isArray()
+        .withMessage('Assigned users must be an array'),
+    (0, express_validator_1.body)('assignedUsers.*')
+        .if((0, express_validator_1.body)('assignedUsers').exists())
+        .isLength({ min: 1, max: 100 })
+        .withMessage('User name must be between 1 and 100 characters')
         .trim()
         .escape(),
 ];

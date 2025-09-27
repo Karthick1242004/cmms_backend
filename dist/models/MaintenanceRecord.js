@@ -129,6 +129,12 @@ const MaintenanceRecordSchema = new mongoose_1.Schema({
         maxlength: [100, 'Asset name cannot exceed 100 characters'],
         index: true,
     },
+    department: {
+        type: String,
+        trim: true,
+        maxlength: [50, 'Department cannot exceed 50 characters'],
+        index: true,
+    },
     completedDate: {
         type: Date,
         required: [true, 'Completed date is required'],
@@ -165,6 +171,22 @@ const MaintenanceRecordSchema = new mongoose_1.Schema({
         trim: true,
         index: true,
     },
+    isOpenTicket: {
+        type: Boolean,
+        default: false,
+        index: true,
+    },
+    assignedDepartment: {
+        type: String,
+        trim: true,
+        maxlength: [50, 'Assigned department cannot exceed 50 characters'],
+        index: true,
+    },
+    assignedUsers: [{
+            type: String,
+            trim: true,
+            maxlength: [100, 'User name cannot exceed 100 characters'],
+        }],
     status: {
         type: String,
         enum: {
@@ -222,6 +244,9 @@ MaintenanceRecordSchema.index({ assetId: 1, status: 1 });
 MaintenanceRecordSchema.index({ technician: 1, completedDate: -1 });
 MaintenanceRecordSchema.index({ adminVerified: 1, completedDate: -1 });
 MaintenanceRecordSchema.index({ status: 1, completedDate: -1 });
+MaintenanceRecordSchema.index({ department: 1, status: 1 });
+MaintenanceRecordSchema.index({ assignedDepartment: 1, status: 1 });
+MaintenanceRecordSchema.index({ isOpenTicket: 1, status: 1 });
 MaintenanceRecordSchema.index({ assetName: 'text', technician: 'text', notes: 'text' });
 MaintenanceRecordSchema.virtual('completionPercentage').get(function () {
     if (!this.partsStatus || this.partsStatus.length === 0)

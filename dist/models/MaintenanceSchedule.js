@@ -130,6 +130,12 @@ const MaintenanceScheduleSchema = new mongoose_1.Schema({
         maxlength: [100, 'Location cannot exceed 100 characters'],
         index: true,
     },
+    department: {
+        type: String,
+        trim: true,
+        maxlength: [50, 'Department cannot exceed 50 characters'],
+        index: true,
+    },
     title: {
         type: String,
         required: [true, 'Maintenance title is required'],
@@ -191,6 +197,22 @@ const MaintenanceScheduleSchema = new mongoose_1.Schema({
         maxlength: [100, 'Assigned technician name cannot exceed 100 characters'],
         index: true,
     },
+    isOpenTicket: {
+        type: Boolean,
+        default: false,
+        index: true,
+    },
+    assignedDepartment: {
+        type: String,
+        trim: true,
+        maxlength: [50, 'Assigned department cannot exceed 50 characters'],
+        index: true,
+    },
+    assignedUsers: [{
+            type: String,
+            trim: true,
+            maxlength: [100, 'User name cannot exceed 100 characters'],
+        }],
     status: {
         type: String,
         enum: {
@@ -215,6 +237,9 @@ MaintenanceScheduleSchema.index({ assetId: 1, status: 1 });
 MaintenanceScheduleSchema.index({ nextDueDate: 1, status: 1 });
 MaintenanceScheduleSchema.index({ assignedTechnician: 1, status: 1 });
 MaintenanceScheduleSchema.index({ frequency: 1, priority: 1 });
+MaintenanceScheduleSchema.index({ department: 1, status: 1 });
+MaintenanceScheduleSchema.index({ assignedDepartment: 1, status: 1 });
+MaintenanceScheduleSchema.index({ isOpenTicket: 1, status: 1 });
 MaintenanceScheduleSchema.index({ title: 'text', assetName: 'text', location: 'text' });
 MaintenanceScheduleSchema.virtual('isOverdue').get(function () {
     return this.status === 'active' && this.nextDueDate < new Date();

@@ -3,13 +3,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-console.log('🚨 DEBUG: index.ts file loaded successfully');
-console.log('🚨 DEBUG: Current working directory:', process.cwd());
-console.log('🚨 DEBUG: Node environment:', process.env.NODE_ENV);
-console.log('🚨 DEBUG: All environment variables:', Object.keys(process.env).filter(key => key.includes('JWT')).map(key => `${key}=${process.env[key]?.substring(0, 8)}...`));
-console.log('🚨 DEBUG: Railway environment:', process.env.RAILWAY_ENVIRONMENT);
-console.log('🚨 DEBUG: All env keys containing "JWT":', Object.keys(process.env).filter(key => key.includes('JWT')));
-console.log('🚨 DEBUG: Direct JWT_SECRET access:', process.env.JWT_SECRET ? 'EXISTS' : 'MISSING');
+console.log('🚀 CMMS Server starting up...');
+console.log('📍 Environment:', process.env.NODE_ENV || 'development');
+console.log('🌐 Railway environment:', process.env.RAILWAY_ENVIRONMENT || 'none');
 const express_1 = __importDefault(require("express"));
 const cors_1 = __importDefault(require("cors"));
 const helmet_1 = __importDefault(require("helmet"));
@@ -43,14 +39,8 @@ const validateEnvironment = () => {
         process.exit(1);
     }
     const jwtSecret = process.env.JWT_SECRET;
-    console.log('🔍 DEBUG: JWT_SECRET validation');
-    console.log(`   - Exists: ${!!jwtSecret}`);
-    console.log(`   - Length: ${jwtSecret?.length || 0} characters`);
-    console.log(`   - Preview: ${jwtSecret ? jwtSecret.substring(0, 4) + '...' + jwtSecret.substring(jwtSecret.length - 4) : 'undefined'}`);
     if (jwtSecret.length < 32) {
         console.error('❌ CRITICAL: JWT_SECRET must be at least 32 characters long');
-        console.error(`   Current length: ${jwtSecret.length}`);
-        console.error(`   Required length: 32 or more`);
         process.exit(1);
     }
     console.log('✅ Environment variables validated successfully');
@@ -88,12 +78,9 @@ if (process.env.FRONTEND_URL && !allowedOrigins.includes(process.env.FRONTEND_UR
 console.log('🔒 Allowed CORS origins:', allowedOrigins);
 app.use((0, cors_1.default)({
     origin: (origin, callback) => {
-        if (!origin && NODE_ENV === 'development') {
+        if (!origin) {
+            console.log('🌐 CORS: Allowing request with no origin (health check/internal)');
             return callback(null, true);
-        }
-        if (!origin && NODE_ENV === 'production') {
-            console.warn('🚫 CORS: Blocked request with no origin in production');
-            return callback(new Error('Origin header required'), false);
         }
         if (allowedOrigins.includes(origin)) {
             return callback(null, true);

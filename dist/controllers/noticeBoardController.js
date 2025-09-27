@@ -21,13 +21,15 @@ const getAllNoticeBoard = async (req, res) => {
         const userRole = req.user.role;
         const query = {
             isActive: true,
-            isPublished: true,
             $or: [
                 { expiresAt: { $exists: false } },
                 { expiresAt: null },
                 { expiresAt: { $gt: new Date() } }
             ]
         };
+        if (userRole !== 'admin') {
+            query.isPublished = true;
+        }
         const visibilityConditions = [
             { targetAudience: 'all' },
             { targetAudience: 'department', targetDepartments: userDepartment },
@@ -46,6 +48,8 @@ const getAllNoticeBoard = async (req, res) => {
             if (targetAudience) {
                 query.targetAudience = targetAudience;
             }
+        }
+        else {
         }
         if (priority) {
             query.priority = priority;

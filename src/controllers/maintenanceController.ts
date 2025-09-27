@@ -17,6 +17,7 @@ export class MaintenanceController {
         priority,
         frequency,
         assignedTechnician,
+        department, // CRITICAL FIX: Extract department parameter for filtering
         sortBy = 'nextDueDate', 
         sortOrder = 'asc' 
       } = req.query;
@@ -47,14 +48,29 @@ export class MaintenanceController {
         query.assignedTechnician = { $regex: assignedTechnician, $options: 'i' };
       }
 
+      // CRITICAL FIX: Add department filtering for access control
+      if (department && department !== 'all') {
+        query.$and = query.$and || [];
+        query.$and.push({
+          $or: [
+            { department: { $regex: department, $options: 'i' } },
+            { assignedDepartment: { $regex: department, $options: 'i' } },
+            { isOpenTicket: true } // Include open tickets accessible to all departments
+          ]
+        });
+      }
+
       if (search) {
-        query.$or = [
-          { title: { $regex: search, $options: 'i' } },
-          { assetName: { $regex: search, $options: 'i' } },
-          { assetTag: { $regex: search, $options: 'i' } },
-          { location: { $regex: search, $options: 'i' } },
-          { assignedTechnician: { $regex: search, $options: 'i' } }
-        ];
+        query.$and = query.$and || [];
+        query.$and.push({
+          $or: [
+            { title: { $regex: search, $options: 'i' } },
+            { assetName: { $regex: search, $options: 'i' } },
+            { assetTag: { $regex: search, $options: 'i' } },
+            { location: { $regex: search, $options: 'i' } },
+            { assignedTechnician: { $regex: search, $options: 'i' } }
+          ]
+        });
       }
 
       // Calculate pagination
@@ -298,6 +314,7 @@ export class MaintenanceController {
         status, 
         technician,
         verified,
+        department, // CRITICAL FIX: Extract department parameter for filtering
         sortBy = 'completedDate', 
         sortOrder = 'desc' 
       } = req.query;
@@ -323,12 +340,27 @@ export class MaintenanceController {
         query.technician = { $regex: technician, $options: 'i' };
       }
 
+      // CRITICAL FIX: Add department filtering for access control
+      if (department && department !== 'all') {
+        query.$and = query.$and || [];
+        query.$and.push({
+          $or: [
+            { department: { $regex: department, $options: 'i' } },
+            { assignedDepartment: { $regex: department, $options: 'i' } },
+            { isOpenTicket: true } // Include open tickets accessible to all departments
+          ]
+        });
+      }
+
       if (search) {
-        query.$or = [
-          { assetName: { $regex: search, $options: 'i' } },
-          { technician: { $regex: search, $options: 'i' } },
-          { notes: { $regex: search, $options: 'i' } }
-        ];
+        query.$and = query.$and || [];
+        query.$and.push({
+          $or: [
+            { assetName: { $regex: search, $options: 'i' } },
+            { technician: { $regex: search, $options: 'i' } },
+            { notes: { $regex: search, $options: 'i' } }
+          ]
+        });
       }
 
       // Calculate pagination

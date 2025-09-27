@@ -10,7 +10,7 @@ const MaintenanceRecord_1 = __importDefault(require("../models/MaintenanceRecord
 class MaintenanceController {
     static async getAllSchedules(req, res) {
         try {
-            const { page = 1, limit = 10, search, status, priority, frequency, assignedTechnician, sortBy = 'nextDueDate', sortOrder = 'asc' } = req.query;
+            const { page = 1, limit = 10, search, status, priority, frequency, assignedTechnician, department, sortBy = 'nextDueDate', sortOrder = 'asc' } = req.query;
             const query = {};
             if (status && status !== 'all') {
                 if (status === 'overdue') {
@@ -32,14 +32,27 @@ class MaintenanceController {
             if (assignedTechnician) {
                 query.assignedTechnician = { $regex: assignedTechnician, $options: 'i' };
             }
+            if (department && department !== 'all') {
+                query.$and = query.$and || [];
+                query.$and.push({
+                    $or: [
+                        { department: { $regex: department, $options: 'i' } },
+                        { assignedDepartment: { $regex: department, $options: 'i' } },
+                        { isOpenTicket: true }
+                    ]
+                });
+            }
             if (search) {
-                query.$or = [
-                    { title: { $regex: search, $options: 'i' } },
-                    { assetName: { $regex: search, $options: 'i' } },
-                    { assetTag: { $regex: search, $options: 'i' } },
-                    { location: { $regex: search, $options: 'i' } },
-                    { assignedTechnician: { $regex: search, $options: 'i' } }
-                ];
+                query.$and = query.$and || [];
+                query.$and.push({
+                    $or: [
+                        { title: { $regex: search, $options: 'i' } },
+                        { assetName: { $regex: search, $options: 'i' } },
+                        { assetTag: { $regex: search, $options: 'i' } },
+                        { location: { $regex: search, $options: 'i' } },
+                        { assignedTechnician: { $regex: search, $options: 'i' } }
+                    ]
+                });
             }
             const skip = (Number(page) - 1) * Number(limit);
             const sortDirection = sortOrder === 'desc' ? -1 : 1;
@@ -229,7 +242,7 @@ class MaintenanceController {
     }
     static async getAllRecords(req, res) {
         try {
-            const { page = 1, limit = 10, search, status, technician, verified, sortBy = 'completedDate', sortOrder = 'desc' } = req.query;
+            const { page = 1, limit = 10, search, status, technician, verified, department, sortBy = 'completedDate', sortOrder = 'desc' } = req.query;
             const query = {};
             if (status && status !== 'all') {
                 if (status === 'verified') {
@@ -248,12 +261,25 @@ class MaintenanceController {
             if (technician) {
                 query.technician = { $regex: technician, $options: 'i' };
             }
+            if (department && department !== 'all') {
+                query.$and = query.$and || [];
+                query.$and.push({
+                    $or: [
+                        { department: { $regex: department, $options: 'i' } },
+                        { assignedDepartment: { $regex: department, $options: 'i' } },
+                        { isOpenTicket: true }
+                    ]
+                });
+            }
             if (search) {
-                query.$or = [
-                    { assetName: { $regex: search, $options: 'i' } },
-                    { technician: { $regex: search, $options: 'i' } },
-                    { notes: { $regex: search, $options: 'i' } }
-                ];
+                query.$and = query.$and || [];
+                query.$and.push({
+                    $or: [
+                        { assetName: { $regex: search, $options: 'i' } },
+                        { technician: { $regex: search, $options: 'i' } },
+                        { notes: { $regex: search, $options: 'i' } }
+                    ]
+                });
             }
             const skip = (Number(page) - 1) * Number(limit);
             const sortDirection = sortOrder === 'desc' ? -1 : 1;

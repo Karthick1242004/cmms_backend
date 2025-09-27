@@ -14,7 +14,7 @@ class PartController {
             const userDepartment = req.user?.department;
             const userRole = req.user?.role;
             let query = { status: 'active' };
-            if (userRole === 'admin') {
+            if (userRole === 'admin' || req.user?.accessLevel === 'super_admin') {
                 if (department && department !== 'all') {
                     query.$or = [
                         { department: department },
@@ -146,8 +146,8 @@ class PartController {
                 return;
             }
             const userDepartment = req.user?.department;
-            const userRole = req.user?.role;
-            if (userRole !== 'admin') {
+            const userAccessLevel = req.user?.accessLevel;
+            if (userAccessLevel !== 'super_admin') {
                 const hasAccess = part.department === userDepartment ||
                     part.linkedAssets?.some((asset) => asset.assetDepartment === userDepartment);
                 if (!hasAccess) {
@@ -209,7 +209,7 @@ class PartController {
             const userDepartment = req.user?.department;
             const userRole = req.user?.role;
             let matchQuery = { status: 'active' };
-            if (userRole !== 'admin') {
+            if (req.user?.accessLevel !== 'super_admin') {
                 matchQuery.$or = [
                     { department: userDepartment },
                     { 'linkedAssets.assetDepartment': userDepartment }
@@ -302,8 +302,8 @@ class PartController {
                 return;
             }
             const userDepartment = req.user?.department;
-            const userRole = req.user?.role;
-            if (userRole !== 'admin' && department !== userDepartment) {
+            const userAccessLevel = req.user?.accessLevel;
+            if (userAccessLevel !== 'super_admin' && department !== userDepartment) {
                 res.status(403).json({
                     success: false,
                     message: 'You can only create parts for your own department'
@@ -416,8 +416,8 @@ class PartController {
                 return;
             }
             const userDepartment = req.user?.department;
-            const userRole = req.user?.role;
-            if (userRole !== 'admin') {
+            const userAccessLevel = req.user?.accessLevel;
+            if (userAccessLevel !== 'super_admin') {
                 const hasAccess = existingPart.department === userDepartment ||
                     existingPart.linkedAssets?.some((asset) => asset.assetDepartment === userDepartment);
                 if (!hasAccess) {
@@ -551,8 +551,8 @@ class PartController {
                 return;
             }
             const userDepartment = req.user?.department;
-            const userRole = req.user?.role;
-            if (userRole !== 'admin') {
+            const userAccessLevel = req.user?.accessLevel;
+            if (userAccessLevel !== 'super_admin') {
                 const hasAccess = existingPart.department === userDepartment ||
                     existingPart.linkedAssets?.some((asset) => asset.assetDepartment === userDepartment);
                 if (!hasAccess) {
