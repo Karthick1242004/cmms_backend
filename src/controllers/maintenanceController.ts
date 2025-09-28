@@ -55,7 +55,13 @@ export class MaintenanceController {
           $or: [
             { department: { $regex: department, $options: 'i' } },
             { assignedDepartment: { $regex: department, $options: 'i' } },
-            { isOpenTicket: true } // Include open tickets accessible to all departments
+            // Include open tickets where the assigned department matches the user's department
+            { 
+              $and: [
+                { isOpenTicket: true },
+                { assignedDepartment: { $regex: department, $options: 'i' } }
+              ]
+            }
           ]
         });
       }
@@ -347,7 +353,13 @@ export class MaintenanceController {
           $or: [
             { department: { $regex: department, $options: 'i' } },
             { assignedDepartment: { $regex: department, $options: 'i' } },
-            { isOpenTicket: true } // Include open tickets accessible to all departments
+            // Include open tickets where the assigned department matches the user's department
+            { 
+              $and: [
+                { isOpenTicket: true },
+                { assignedDepartment: { $regex: department, $options: 'i' } }
+              ]
+            }
           ]
         });
       }
