@@ -1,0 +1,45 @@
+# Node modules (will be installed on AWS)
+node_modules/
+
+# Source TypeScript files (we'll upload compiled JS)
+src/
+
+# Git
+.git/
+.gitignore
+
+# Logs
+logs/
+*.log
+server.log
+
+# IDE
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+
+# Environment files (we'll set these in AWS)
+.env
+.env.*
+
+# Build artifacts that will be rebuilt
+tsconfig.json
+
+# Documentation
+*.md
+!README.md
+
+# Railway specific (not needed for EB)
+railway.json
+railway-backup.json
+.railwayignore
+Procfile
+
+# Docker (not needed for EB)
+Dockerfile
+.dockerignore
+
+# Test files
+test_token.txt
