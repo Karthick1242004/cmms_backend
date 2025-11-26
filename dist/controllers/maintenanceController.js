@@ -38,7 +38,12 @@ class MaintenanceController {
                     $or: [
                         { department: { $regex: department, $options: 'i' } },
                         { assignedDepartment: { $regex: department, $options: 'i' } },
-                        { isOpenTicket: true }
+                        {
+                            $and: [
+                                { isOpenTicket: true },
+                                { assignedDepartment: { $regex: department, $options: 'i' } }
+                            ]
+                        }
                     ]
                 });
             }
@@ -267,7 +272,12 @@ class MaintenanceController {
                     $or: [
                         { department: { $regex: department, $options: 'i' } },
                         { assignedDepartment: { $regex: department, $options: 'i' } },
-                        { isOpenTicket: true }
+                        {
+                            $and: [
+                                { isOpenTicket: true },
+                                { assignedDepartment: { $regex: department, $options: 'i' } }
+                            ]
+                        }
                     ]
                 });
             }
